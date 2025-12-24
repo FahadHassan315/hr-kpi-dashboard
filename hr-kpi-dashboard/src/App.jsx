@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Target } from 'lucide-react';
 
 const HRKPIDashboard = () => {
   const [selectedFunction, setSelectedFunction] = useState('all');
   
   const kpiData = [
-    // Talent Acquisition
     {
       hrFunction: 'Talent Acquisition',
       kpi: 'Hiring Quality',
@@ -23,7 +22,7 @@ const HRKPIDashboard = () => {
       companyPillar: 'Financial Performance',
       target: 'Reduce turnover rate by 5%',
       currentValue: 0,
-      targetValue: -5,
+      targetValue: 5,
       status: 'In Progress',
       icon: '📉'
     },
@@ -33,11 +32,10 @@ const HRKPIDashboard = () => {
       companyPillar: 'Financial Performance',
       target: 'Reduce average time to fill critical positions by 5%',
       currentValue: 0,
-      targetValue: -5,
+      targetValue: 5,
       status: 'In Progress',
       icon: '⏱️'
     },
-    // Learning
     {
       hrFunction: 'Learning',
       kpi: 'Employee Development Index',
@@ -68,7 +66,6 @@ const HRKPIDashboard = () => {
       status: 'In Progress',
       icon: '📚'
     },
-    // Talent Management
     {
       hrFunction: 'Talent Management',
       kpi: 'Employee Engagement Score',
@@ -111,21 +108,34 @@ const HRKPIDashboard = () => {
     ? kpiData 
     : kpiData.filter(item => item.hrFunction === selectedFunction);
 
-  const functionSummary = Object.keys(functionColors).map(func => ({
-    name: func,
-    kpiCount: kpiData.filter(item => item.hrFunction === func).length,
-    avgTarget: Math.round(
-      kpiData
-        .filter(item => item.hrFunction === func)
-        .reduce((acc, item) => acc + Math.abs(item.targetValue), 0) / 
-      kpiData.filter(item => item.hrFunction === func).length
-    )
-  }));
+  const functionSummary = [
+    {
+      name: 'Talent Acquisition',
+      kpiCount: kpiData.filter(item => item.hrFunction === 'Talent Acquisition').length
+    },
+    {
+      name: 'Learning',
+      kpiCount: kpiData.filter(item => item.hrFunction === 'Learning').length
+    },
+    {
+      name: 'Talent Management',
+      kpiCount: kpiData.filter(item => item.hrFunction === 'Talent Management').length
+    }
+  ];
 
   const companyPillarData = [
-    { name: 'Financial Performance', value: kpiData.filter(k => k.companyPillar === 'Financial Performance').length },
-    { name: 'People', value: kpiData.filter(k => k.companyPillar === 'People').length },
-    { name: 'AI', value: kpiData.filter(k => k.companyPillar === 'AI').length }
+    { 
+      name: 'Financial Performance', 
+      value: kpiData.filter(k => k.companyPillar === 'Financial Performance').length 
+    },
+    { 
+      name: 'People', 
+      value: kpiData.filter(k => k.companyPillar === 'People').length 
+    },
+    { 
+      name: 'AI', 
+      value: kpiData.filter(k => k.companyPillar === 'AI').length 
+    }
   ];
 
   const COLORS = ['#E67E22', '#E74C3C', '#9B59B6'];
@@ -133,7 +143,6 @@ const HRKPIDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
@@ -148,7 +157,6 @@ const HRKPIDashboard = () => {
           </div>
         </div>
 
-        {/* HR Function Filter */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
           <h3 className="text-sm font-semibold text-slate-600 mb-3">Filter by HR Function:</h3>
           <div className="flex flex-wrap gap-2">
@@ -160,26 +168,44 @@ const HRKPIDashboard = () => {
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              All Functions
+              All Functions ({kpiData.length})
             </button>
-            {Object.keys(functionColors).map(func => (
-              <button
-                key={func}
-                onClick={() => setSelectedFunction(func)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  selectedFunction === func
-                    ? 'text-white shadow-lg'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-                style={selectedFunction === func ? { backgroundColor: functionColors[func] } : {}}
-              >
-                {func}
-              </button>
-            ))}
+            <button
+              onClick={() => setSelectedFunction('Talent Acquisition')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                selectedFunction === 'Talent Acquisition'
+                  ? 'text-white shadow-lg'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+              style={selectedFunction === 'Talent Acquisition' ? { backgroundColor: '#3498DB' } : {}}
+            >
+              Talent Acquisition (3)
+            </button>
+            <button
+              onClick={() => setSelectedFunction('Learning')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                selectedFunction === 'Learning'
+                  ? 'text-white shadow-lg'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+              style={selectedFunction === 'Learning' ? { backgroundColor: '#9B59B6' } : {}}
+            >
+              Learning (3)
+            </button>
+            <button
+              onClick={() => setSelectedFunction('Talent Management')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                selectedFunction === 'Talent Management'
+                  ? 'text-white shadow-lg'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+              style={selectedFunction === 'Talent Management' ? { backgroundColor: '#E74C3C' } : {}}
+            >
+              Talent Management (3)
+            </button>
           </div>
         </div>
 
-        {/* Summary Charts */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by HR Function</h2>
@@ -218,17 +244,16 @@ const HRKPIDashboard = () => {
           </div>
         </div>
 
-        {/* KPI Cards */}
         <div className="mb-4">
           <h2 className="text-2xl font-bold text-slate-800">
             {selectedFunction === 'all' ? 'All KPIs' : `${selectedFunction} KPIs`}
           </h2>
           <p className="text-slate-600">
-            {filteredData.length} KPI{filteredData.length !== 1 ? 's' : ''} in this view
+            Showing {filteredData.length} KPI{filteredData.length !== 1 ? 's' : ''}
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {filteredData.map((kpi, index) => (
             <div
               key={index}
@@ -279,7 +304,7 @@ const HRKPIDashboard = () => {
                     <div
                       className="h-2 rounded-full transition-all"
                       style={{
-                        width: `${Math.min((Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100, 100)}%`,
+                        width: `${(Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100}%`,
                         backgroundColor: functionColors[kpi.hrFunction]
                       }}
                     />
@@ -290,8 +315,7 @@ const HRKPIDashboard = () => {
           ))}
         </div>
 
-        {/* Implementation Roadmap */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Implementation Roadmap</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-blue-50 rounded-lg p-4">
