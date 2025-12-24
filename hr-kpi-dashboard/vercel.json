@@ -1,22 +1,5 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "dist",
   "framework": "vite",
-  "installCommand": "npm install"
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
 }
-```
-
-## Your Updated File Structure Should Be:
-```
-hr-kpi-dashboard/
-├── src/
-│   ├── App.jsx
-│   ├── index.css
-│   └── main.jsx
-├── .gitignore          ← ADD THIS
-├── index.html
-├── package.json
-├── postcss.config.js
-├── tailwind.config.js
-├── vite.config.js
-└── vercel.json         ← ADD THIS
