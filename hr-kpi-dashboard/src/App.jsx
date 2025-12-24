@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { TrendingUp, Users, Target, Award, Globe, Brain, Leaf } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Target } from 'lucide-react';
 
 const HRKPIDashboard = () => {
   const [selectedPillar, setSelectedPillar] = useState('all');
@@ -8,7 +8,7 @@ const HRKPIDashboard = () => {
   const kpiData = [
     {
       companyPillar: 'Financial Performance',
-      hrPillar: 'P&C Organization',
+      hrPillar: 'Talent Acquisition',
       kpi: 'Hiring Quality',
       target: '20% of hires meeting or exceeding performance expectations',
       currentValue: 0,
@@ -18,7 +18,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'Financial Performance',
-      hrPillar: 'P&C Organization',
+      hrPillar: 'Talent Acquisition',
       kpi: 'People Turnover Rate',
       target: 'Reduce turnover rate by 5%',
       currentValue: 0,
@@ -28,7 +28,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'Financial Performance',
-      hrPillar: 'P&C Organization',
+      hrPillar: 'Talent Acquisition',
       kpi: 'Time to Fill',
       target: 'Reduce average time to fill critical positions by 5%',
       currentValue: 0,
@@ -38,7 +38,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'Financial Performance',
-      hrPillar: 'Talent & Skills',
+      hrPillar: 'Learning',
       kpi: 'Employee Development Index',
       target: 'Increase by 5% from baseline',
       currentValue: 0,
@@ -48,7 +48,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'Business Expansion',
-      hrPillar: 'Talent & Skills',
+      hrPillar: 'Learning',
       kpi: 'Talent Availability',
       target: '85% readiness for 2 international markets',
       currentValue: 0,
@@ -58,7 +58,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'Business Expansion',
-      hrPillar: 'Leadership & Culture',
+      hrPillar: 'Talent Management',
       kpi: 'Leadership Readiness',
       target: '20% leadership roles filled internally',
       currentValue: 0,
@@ -68,7 +68,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'AI',
-      hrPillar: 'P&C Organization',
+      hrPillar: 'Talent Acquisition',
       kpi: 'AI-Driven P&C Processes',
       target: 'Implement AI in 25% of P&C processes',
       currentValue: 0,
@@ -78,8 +78,8 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'AI',
-      hrPillar: 'Talent & Skills',
-      kpi: 'AI Training',
+      hrPillar: 'Learning',
+      kpi: 'AI Training for Employees',
       target: '35% of permanent employees trained in AI tools',
       currentValue: 0,
       targetValue: 35,
@@ -88,7 +88,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'AI',
-      hrPillar: 'Talent & Skills',
+      hrPillar: 'Learning',
       kpi: 'Talent Development',
       target: '60% completion rate of skill development',
       currentValue: 0,
@@ -98,7 +98,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'ESG',
-      hrPillar: 'Leadership & Culture',
+      hrPillar: 'Talent Management',
       kpi: 'Diversity & Inclusion Index',
       target: 'Average 10% workplace diversity',
       currentValue: 0,
@@ -108,7 +108,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'ESG',
-      hrPillar: 'P&C Organization',
+      hrPillar: 'Talent Acquisition',
       kpi: 'ESG Compliance',
       target: '30% compliance with ESG standards',
       currentValue: 0,
@@ -118,7 +118,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'People',
-      hrPillar: 'Leadership & Culture',
+      hrPillar: 'Talent Management',
       kpi: 'Employee Engagement Score',
       target: 'Achieve at least 20% engagement',
       currentValue: 0,
@@ -128,7 +128,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'People',
-      hrPillar: 'Leadership & Culture',
+      hrPillar: 'Talent Management',
       kpi: 'Leadership Effectiveness',
       target: '20% high satisfaction with leadership',
       currentValue: 0,
@@ -138,7 +138,7 @@ const HRKPIDashboard = () => {
     },
     {
       companyPillar: 'People',
-      hrPillar: 'P&C Organization',
+      hrPillar: 'Talent Management',
       kpi: 'P&C Service Efficiency',
       target: '45% satisfaction rate in HR service delivery',
       currentValue: 0,
@@ -172,9 +172,9 @@ const HRKPIDashboard = () => {
   }));
 
   const hrPillarData = [
-    { name: 'P&C Organization', value: kpiData.filter(k => k.hrPillar === 'P&C Organization').length },
-    { name: 'Talent & Skills', value: kpiData.filter(k => k.hrPillar === 'Talent & Skills').length },
-    { name: 'Leadership & Culture', value: kpiData.filter(k => k.hrPillar === 'Leadership & Culture').length }
+    { name: 'Talent Acquisition', value: kpiData.filter(k => k.hrPillar === 'Talent Acquisition').length },
+    { name: 'Learning', value: kpiData.filter(k => k.hrPillar === 'Learning').length },
+    { name: 'Talent Management', value: kpiData.filter(k => k.hrPillar === 'Talent Management').length }
   ];
 
   const COLORS = ['#3498DB', '#9B59B6', '#E74C3C'];
@@ -243,7 +243,7 @@ const HRKPIDashboard = () => {
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by HR Strategic Pillar</h2>
+            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by HR Function</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -296,7 +296,7 @@ const HRKPIDashboard = () => {
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-600">HR Pillar:</span>
+                    <span className="text-slate-600">HR Function:</span>
                     <span className="font-medium text-slate-800">{kpi.hrPillar}</span>
                   </div>
                 </div>
@@ -326,7 +326,7 @@ const HRKPIDashboard = () => {
           ))}
         </div>
 
-        {/* Implementation Guide */}
+        {/* Implementation Roadmap */}
         <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Implementation Roadmap</h2>
           <div className="grid md:grid-cols-3 gap-6">
