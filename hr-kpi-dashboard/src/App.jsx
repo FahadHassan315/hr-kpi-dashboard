@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Target } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { TrendingUp, Users, Target, Award, Globe, Brain, Leaf } from 'lucide-react';
 
 const HRKPIDashboard = () => {
-  const [selectedFunction, setSelectedFunction] = useState('all');
+  const [selectedPillar, setSelectedPillar] = useState('all');
   
   const kpiData = [
     {
-      hrFunction: 'Talent Acquisition',
-      kpi: 'Hiring Quality',
       companyPillar: 'Financial Performance',
+      hrPillar: 'P&C Organization',
+      kpi: 'Hiring Quality',
       target: '20% of hires meeting or exceeding performance expectations',
       currentValue: 0,
       targetValue: 20,
@@ -17,29 +17,29 @@ const HRKPIDashboard = () => {
       icon: '👥'
     },
     {
-      hrFunction: 'Talent Acquisition',
-      kpi: 'People Turnover Rate',
       companyPillar: 'Financial Performance',
+      hrPillar: 'P&C Organization',
+      kpi: 'People Turnover Rate',
       target: 'Reduce turnover rate by 5%',
       currentValue: 0,
-      targetValue: 5,
+      targetValue: -5,
       status: 'In Progress',
       icon: '📉'
     },
     {
-      hrFunction: 'Talent Acquisition',
-      kpi: 'Time to Fill',
       companyPillar: 'Financial Performance',
+      hrPillar: 'P&C Organization',
+      kpi: 'Time to Fill',
       target: 'Reduce average time to fill critical positions by 5%',
       currentValue: 0,
-      targetValue: 5,
+      targetValue: -5,
       status: 'In Progress',
       icon: '⏱️'
     },
     {
-      hrFunction: 'Learning',
-      kpi: 'Employee Development Index',
       companyPillar: 'Financial Performance',
+      hrPillar: 'Talent & Skills',
+      kpi: 'Employee Development Index',
       target: 'Increase by 5% from baseline',
       currentValue: 0,
       targetValue: 5,
@@ -47,9 +47,39 @@ const HRKPIDashboard = () => {
       icon: '📈'
     },
     {
-      hrFunction: 'Learning',
-      kpi: 'AI Training for Employees',
+      companyPillar: 'Business Expansion',
+      hrPillar: 'Talent & Skills',
+      kpi: 'Talent Availability',
+      target: '85% readiness for 2 international markets',
+      currentValue: 0,
+      targetValue: 85,
+      status: 'In Progress',
+      icon: '🌍'
+    },
+    {
+      companyPillar: 'Business Expansion',
+      hrPillar: 'Leadership & Culture',
+      kpi: 'Leadership Readiness',
+      target: '20% leadership roles filled internally',
+      currentValue: 0,
+      targetValue: 20,
+      status: 'In Progress',
+      icon: '👔'
+    },
+    {
       companyPillar: 'AI',
+      hrPillar: 'P&C Organization',
+      kpi: 'AI-Driven P&C Processes',
+      target: 'Implement AI in 25% of P&C processes',
+      currentValue: 0,
+      targetValue: 25,
+      status: 'Planning',
+      icon: '🤖'
+    },
+    {
+      companyPillar: 'AI',
+      hrPillar: 'Talent & Skills',
+      kpi: 'AI Training',
       target: '35% of permanent employees trained in AI tools',
       currentValue: 0,
       targetValue: 35,
@@ -57,9 +87,9 @@ const HRKPIDashboard = () => {
       icon: '🎓'
     },
     {
-      hrFunction: 'Learning',
-      kpi: 'Talent Development',
       companyPillar: 'AI',
+      hrPillar: 'Talent & Skills',
+      kpi: 'Talent Development',
       target: '60% completion rate of skill development',
       currentValue: 0,
       targetValue: 60,
@@ -67,9 +97,29 @@ const HRKPIDashboard = () => {
       icon: '📚'
     },
     {
-      hrFunction: 'Talent Management',
-      kpi: 'Employee Engagement Score',
+      companyPillar: 'ESG',
+      hrPillar: 'Leadership & Culture',
+      kpi: 'Diversity & Inclusion Index',
+      target: 'Average 10% workplace diversity',
+      currentValue: 0,
+      targetValue: 10,
+      status: 'In Progress',
+      icon: '🤝'
+    },
+    {
+      companyPillar: 'ESG',
+      hrPillar: 'P&C Organization',
+      kpi: 'ESG Compliance',
+      target: '30% compliance with ESG standards',
+      currentValue: 0,
+      targetValue: 30,
+      status: 'Planning',
+      icon: '♻️'
+    },
+    {
       companyPillar: 'People',
+      hrPillar: 'Leadership & Culture',
+      kpi: 'Employee Engagement Score',
       target: 'Achieve at least 20% engagement',
       currentValue: 0,
       targetValue: 20,
@@ -77,72 +127,62 @@ const HRKPIDashboard = () => {
       icon: '💪'
     },
     {
-      hrFunction: 'Talent Management',
-      kpi: 'Employee Development Index',
-      companyPillar: 'Financial Performance',
-      target: 'Increase by 5% from baseline',
+      companyPillar: 'People',
+      hrPillar: 'Leadership & Culture',
+      kpi: 'Leadership Effectiveness',
+      target: '20% high satisfaction with leadership',
       currentValue: 0,
-      targetValue: 5,
-      status: 'Start Tracking',
-      icon: '📊'
+      targetValue: 20,
+      status: 'In Progress',
+      icon: '⭐'
     },
     {
-      hrFunction: 'Talent Management',
-      kpi: 'Talent Development',
-      companyPillar: 'AI',
-      target: '60% completion rate of skill development',
+      companyPillar: 'People',
+      hrPillar: 'P&C Organization',
+      kpi: 'P&C Service Efficiency',
+      target: '45% satisfaction rate in HR service delivery',
       currentValue: 0,
-      targetValue: 60,
+      targetValue: 45,
       status: 'In Progress',
       icon: '🎯'
     }
   ];
 
-  const functionColors = {
-    'Talent Acquisition': '#3498DB',
-    'Learning': '#9B59B6',
-    'Talent Management': '#E74C3C'
+  const pillarColors = {
+    'Financial Performance': '#E67E22',
+    'Business Expansion': '#3498DB',
+    'AI': '#9B59B6',
+    'ESG': '#27AE60',
+    'People': '#E74C3C'
   };
 
-  const filteredData = selectedFunction === 'all' 
+  const filteredData = selectedPillar === 'all' 
     ? kpiData 
-    : kpiData.filter(item => item.hrFunction === selectedFunction);
+    : kpiData.filter(item => item.companyPillar === selectedPillar);
 
-  const functionSummary = [
-    {
-      name: 'Talent Acquisition',
-      kpiCount: kpiData.filter(item => item.hrFunction === 'Talent Acquisition').length
-    },
-    {
-      name: 'Learning',
-      kpiCount: kpiData.filter(item => item.hrFunction === 'Learning').length
-    },
-    {
-      name: 'Talent Management',
-      kpiCount: kpiData.filter(item => item.hrFunction === 'Talent Management').length
-    }
+  const pillarSummary = Object.keys(pillarColors).map(pillar => ({
+    name: pillar,
+    kpiCount: kpiData.filter(item => item.companyPillar === pillar).length,
+    avgTarget: Math.round(
+      kpiData
+        .filter(item => item.companyPillar === pillar)
+        .reduce((acc, item) => acc + Math.abs(item.targetValue), 0) / 
+      kpiData.filter(item => item.companyPillar === pillar).length
+    )
+  }));
+
+  const hrPillarData = [
+    { name: 'P&C Organization', value: kpiData.filter(k => k.hrPillar === 'P&C Organization').length },
+    { name: 'Talent & Skills', value: kpiData.filter(k => k.hrPillar === 'Talent & Skills').length },
+    { name: 'Leadership & Culture', value: kpiData.filter(k => k.hrPillar === 'Leadership & Culture').length }
   ];
 
-  const companyPillarData = [
-    { 
-      name: 'Financial Performance', 
-      value: kpiData.filter(k => k.companyPillar === 'Financial Performance').length 
-    },
-    { 
-      name: 'People', 
-      value: kpiData.filter(k => k.companyPillar === 'People').length 
-    },
-    { 
-      name: 'AI', 
-      value: kpiData.filter(k => k.companyPillar === 'AI').length 
-    }
-  ];
-
-  const COLORS = ['#E67E22', '#E74C3C', '#9B59B6'];
+  const COLORS = ['#3498DB', '#9B59B6', '#E74C3C'];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
@@ -150,67 +190,49 @@ const HRKPIDashboard = () => {
                 HR Strategic KPI Dashboard 2025
               </h1>
               <p className="text-slate-600">
-                Track and monitor your HR objectives by function
+                Track and monitor your strategic HR objectives aligned with company goals
               </p>
             </div>
             <Target className="w-12 h-12 text-blue-600" />
           </div>
         </div>
 
+        {/* Pillar Filter */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-          <h3 className="text-sm font-semibold text-slate-600 mb-3">Filter by HR Function:</h3>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSelectedFunction('all')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                selectedFunction === 'all'
-                  ? 'bg-slate-700 text-white shadow-lg'
+              onClick={() => setSelectedPillar('all')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                selectedPillar === 'all'
+                  ? 'bg-slate-700 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              All Functions ({kpiData.length})
+              All Pillars
             </button>
-            <button
-              onClick={() => setSelectedFunction('Talent Acquisition')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                selectedFunction === 'Talent Acquisition'
-                  ? 'text-white shadow-lg'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-              style={selectedFunction === 'Talent Acquisition' ? { backgroundColor: '#3498DB' } : {}}
-            >
-              Talent Acquisition (3)
-            </button>
-            <button
-              onClick={() => setSelectedFunction('Learning')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                selectedFunction === 'Learning'
-                  ? 'text-white shadow-lg'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-              style={selectedFunction === 'Learning' ? { backgroundColor: '#9B59B6' } : {}}
-            >
-              Learning (3)
-            </button>
-            <button
-              onClick={() => setSelectedFunction('Talent Management')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                selectedFunction === 'Talent Management'
-                  ? 'text-white shadow-lg'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-              style={selectedFunction === 'Talent Management' ? { backgroundColor: '#E74C3C' } : {}}
-            >
-              Talent Management (3)
-            </button>
+            {Object.keys(pillarColors).map(pillar => (
+              <button
+                key={pillar}
+                onClick={() => setSelectedPillar(pillar)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  selectedPillar === pillar
+                    ? 'text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+                style={selectedPillar === pillar ? { backgroundColor: pillarColors[pillar] } : {}}
+              >
+                {pillar}
+              </button>
+            ))}
           </div>
         </div>
 
+        {/* Summary Charts */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by HR Function</h2>
+            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by Strategic Pillar</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={functionSummary}>
+              <BarChart data={pillarSummary}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-15} textAnchor="end" height={80} />
                 <YAxis />
@@ -221,11 +243,11 @@ const HRKPIDashboard = () => {
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by Company Strategic Pillar</h2>
+            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by HR Strategic Pillar</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={companyPillarData}
+                  data={hrPillarData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -234,7 +256,7 @@ const HRKPIDashboard = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {companyPillarData.map((entry, index) => (
+                  {hrPillarData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -244,30 +266,19 @@ const HRKPIDashboard = () => {
           </div>
         </div>
 
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold text-slate-800">
-            {selectedFunction === 'all' ? 'All KPIs' : `${selectedFunction} KPIs`}
-          </h2>
-          <p className="text-slate-600">
-            Showing {filteredData.length} KPI{filteredData.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        {/* KPI Cards */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredData.map((kpi, index) => (
             <div
               key={index}
               className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4"
-              style={{ borderTopColor: functionColors[kpi.hrFunction] }}
+              style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="text-3xl mb-2">{kpi.icon}</div>
                   <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
-                  <div className="inline-block px-2 py-1 rounded-md text-xs font-medium mb-2"
-                       style={{ backgroundColor: functionColors[kpi.hrFunction] + '20', color: functionColors[kpi.hrFunction] }}>
-                    {kpi.hrFunction}
-                  </div>
+                  <p className="text-sm text-slate-500 mb-2">{kpi.companyPillar}</p>
                 </div>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -285,8 +296,8 @@ const HRKPIDashboard = () => {
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-600">Company Pillar:</span>
-                    <span className="font-medium text-slate-800 text-xs">{kpi.companyPillar}</span>
+                    <span className="text-slate-600">HR Pillar:</span>
+                    <span className="font-medium text-slate-800">{kpi.hrPillar}</span>
                   </div>
                 </div>
 
@@ -304,8 +315,8 @@ const HRKPIDashboard = () => {
                     <div
                       className="h-2 rounded-full transition-all"
                       style={{
-                        width: `${(Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100}%`,
-                        backgroundColor: functionColors[kpi.hrFunction]
+                        width: `${Math.min((Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100, 100)}%`,
+                        backgroundColor: pillarColors[kpi.companyPillar]
                       }}
                     />
                   </div>
@@ -315,7 +326,8 @@ const HRKPIDashboard = () => {
           ))}
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        {/* Implementation Guide */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Implementation Roadmap</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-blue-50 rounded-lg p-4">
