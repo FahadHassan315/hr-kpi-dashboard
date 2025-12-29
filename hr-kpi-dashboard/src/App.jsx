@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Users, Target, Award, BookOpen, Briefcase } from 'lucide-react';
+import { TrendingUp, Users, Target, Award, BookOpen, Briefcase, X, Download, FileSpreadsheet } from 'lucide-react';
 
 const HRKPIDashboard = () => {
   const [selectedPillar, setSelectedPillar] = useState('all');
+  const [selectedKPI, setSelectedKPI] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   
   const kpiData = [
     // Talent Acquisition Pillar
@@ -15,17 +17,28 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 20,
       status: 'Start Tracking',
-      icon: '👥'
+      icon: '👥',
+      details: {
+        description: 'This KPI measures the quality of new hires based on performance reviews and manager feedback.',
+        dataSource: null,
+        formula: null
+      }
     },
     {
       companyPillar: 'Talent Acquisition',
       hrPillar: 'P&C Organization',
       kpi: 'People Turnover Rate',
       target: 'Reduce turnover rate by 5%',
-      currentValue: 0,
+      currentValue: 34.4,
       targetValue: 5,
       status: 'In Progress',
-      icon: '📉'
+      icon: '📉',
+      details: {
+        description: 'The turnover rate for the year 2025 is calculated from the EDM Report, which tracks employee exits and headcount data throughout the year.',
+        dataSource: '/data/EDM_Report.xlsx',
+        formula: 'Turnover Rate (%) = (Number of Exits / Average Headcount) × 100',
+        additionalInfo: 'This metric helps identify retention challenges and measure the effectiveness of employee engagement initiatives.'
+      }
     },
     {
       companyPillar: 'Talent Acquisition',
@@ -35,7 +48,12 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 5,
       status: 'In Progress',
-      icon: '⏱️'
+      icon: '⏱️',
+      details: {
+        description: 'Measures the efficiency of the recruitment process by tracking days from job posting to offer acceptance.',
+        dataSource: null,
+        formula: null
+      }
     },
     {
       companyPillar: 'Talent Acquisition',
@@ -45,7 +63,12 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 10,
       status: 'In Progress',
-      icon: '🤝'
+      icon: '🤝',
+      details: {
+        description: 'Tracks workplace diversity across multiple dimensions including age, gender, and minority representation.',
+        dataSource: null,
+        formula: null
+      }
     },
     // Talent Management Pillar
     {
@@ -56,7 +79,12 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 5,
       status: 'Start Tracking',
-      icon: '📈'
+      icon: '📈',
+      details: {
+        description: 'Measures overall employee skill growth and development through training completion and skill assessments.',
+        dataSource: null,
+        formula: null
+      }
     },
     {
       companyPillar: 'Talent Management',
@@ -66,7 +94,12 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 25,
       status: 'Planning',
-      icon: '🤖'
+      icon: '🤖',
+      details: {
+        description: 'Tracks the adoption of AI technology in HR processes to improve efficiency and decision-making.',
+        dataSource: null,
+        formula: null
+      }
     },
     {
       companyPillar: 'Talent Management',
@@ -76,7 +109,12 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 20,
       status: 'In Progress',
-      icon: '💪'
+      icon: '💪',
+      details: {
+        description: 'Measures employee satisfaction, commitment, and motivation through regular surveys and feedback.',
+        dataSource: null,
+        formula: null
+      }
     },
     // Learning Pillar
     {
@@ -87,7 +125,12 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 35,
       status: 'In Progress',
-      icon: '🎓'
+      icon: '🎓',
+      details: {
+        description: 'Tracks the percentage of employees who have completed AI tools training programs.',
+        dataSource: null,
+        formula: null
+      }
     },
     {
       companyPillar: 'Learning',
@@ -97,7 +140,12 @@ const HRKPIDashboard = () => {
       currentValue: 0,
       targetValue: 60,
       status: 'In Progress',
-      icon: '📚'
+      icon: '📚',
+      details: {
+        description: 'Measures the completion rate of assigned learning and development programs across the organization.',
+        dataSource: null,
+        formula: null
+      }
     }
   ];
 
@@ -135,6 +183,75 @@ const HRKPIDashboard = () => {
   ];
 
   const COLORS = ['#3498DB', '#9B59B6', '#E74C3C'];
+
+  const handleKPIClick = (kpi) => {
+    setSelectedKPI(kpi);
+    setShowModal(true);
+  };
+
+  const handleDownload = (filePath) => {
+    const link = document.createElement('a');
+    link.href = filePath;
+    link.download = filePath.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const KPICard = ({ kpi, index }) => (
+    <div
+      key={index}
+      onClick={() => handleKPIClick(kpi)}
+      className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1"
+      style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <div className="text-3xl mb-2">{kpi.icon}</div>
+          <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
+          <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
+        </div>
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-medium ${
+            kpi.status === 'Start Tracking'
+              ? 'bg-yellow-100 text-yellow-800'
+              : kpi.status === 'Planning'
+              ? 'bg-purple-100 text-purple-800'
+              : 'bg-blue-100 text-blue-800'
+          }`}
+        >
+          {kpi.status}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <div className="bg-slate-50 rounded-lg p-3">
+          <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
+          <p className="text-sm text-slate-600">{kpi.target}</p>
+        </div>
+
+        <div className="pt-2">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-slate-600">Current Progress:</span>
+            <span className="font-bold text-slate-800">{kpi.currentValue}%</span>
+          </div>
+          <div className="w-full bg-slate-200 rounded-full h-2">
+            <div
+              className="h-2 rounded-full transition-all"
+              style={{
+                width: `${Math.min((Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100, 100)}%`,
+                backgroundColor: pillarColors[kpi.companyPillar]
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 text-center">
+        <span className="text-xs text-blue-600 font-medium">Click for details</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -248,53 +365,7 @@ const HRKPIDashboard = () => {
                 </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {pillarKPIs.map((kpi, index) => (
-                    <div
-                      key={index}
-                      className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4"
-                      style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="text-3xl mb-2">{kpi.icon}</div>
-                          <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
-                          <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
-                        </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            kpi.status === 'Start Tracking'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : kpi.status === 'Planning'
-                              ? 'bg-purple-100 text-purple-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {kpi.status}
-                        </span>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="bg-slate-50 rounded-lg p-3">
-                          <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
-                          <p className="text-sm text-slate-600">{kpi.target}</p>
-                        </div>
-
-                        <div className="pt-2">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-600">Current Progress:</span>
-                            <span className="font-bold text-slate-800">{kpi.currentValue}%</span>
-                          </div>
-                          <div className="w-full bg-slate-200 rounded-full h-2">
-                            <div
-                              className="h-2 rounded-full transition-all"
-                              style={{
-                                width: `${Math.min((Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100, 100)}%`,
-                                backgroundColor: pillarColors[kpi.companyPillar]
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <KPICard key={index} kpi={kpi} index={index} />
                   ))}
                 </div>
               </div>
@@ -318,53 +389,7 @@ const HRKPIDashboard = () => {
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredData.map((kpi, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-t-4"
-                  style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="text-3xl mb-2">{kpi.icon}</div>
-                      <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
-                      <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        kpi.status === 'Start Tracking'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : kpi.status === 'Planning'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {kpi.status}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
-                      <p className="text-sm text-slate-600">{kpi.target}</p>
-                    </div>
-
-                    <div className="pt-2">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-slate-600">Current Progress:</span>
-                        <span className="font-bold text-slate-800">{kpi.currentValue}%</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div
-                          className="h-2 rounded-full transition-all"
-                          style={{
-                            width: `${Math.min((Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100, 100)}%`,
-                            backgroundColor: pillarColors[kpi.companyPillar]
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <KPICard key={index} kpi={kpi} index={index} />
               ))}
             </div>
           </div>
@@ -404,6 +429,114 @@ const HRKPIDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Modal for KPI Details */}
+        {showModal && selectedKPI && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">{selectedKPI.icon}</span>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">{selectedKPI.kpi}</h2>
+                    <p className="text-sm text-slate-500">{selectedKPI.companyPillar} • {selectedKPI.hrPillar}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-slate-600" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Current Value */}
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Current Value</span>
+                    <span className="text-4xl font-bold text-slate-800">{selectedKPI.currentValue}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-3 mt-3">
+                    <div
+                      className="h-3 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min((Math.abs(selectedKPI.currentValue) / Math.abs(selectedKPI.targetValue)) * 100, 100)}%`,
+                        backgroundColor: pillarColors[selectedKPI.companyPillar]
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Target */}
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">2025 Target</p>
+                  <p className="text-slate-800">{selectedKPI.target}</p>
+                </div>
+
+                {/* Description */}
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">Description</p>
+                  <p className="text-slate-700">{selectedKPI.details.description}</p>
+                </div>
+
+                {/* Formula */}
+                {selectedKPI.details.formula && (
+                  <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+                    <p className="text-sm font-semibold text-blue-800 uppercase tracking-wide mb-3">Calculation Formula</p>
+                    <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-800 border border-blue-300">
+                      {selectedKPI.details.formula}
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Info */}
+                {selectedKPI.details.additionalInfo && (
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                    <p className="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-2">Additional Information</p>
+                    <p className="text-slate-700">{selectedKPI.details.additionalInfo}</p>
+                  </div>
+                )}
+
+                {/* Data Source & Download */}
+                {selectedKPI.details.dataSource && (
+                  <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileSpreadsheet className="w-5 h-5 text-green-700" />
+                      <p className="text-sm font-semibold text-green-800 uppercase tracking-wide">Data Source</p>
+                    </div>
+                    <p className="text-slate-700 mb-4">
+                      The data for this KPI is sourced from the EDM Report, which contains detailed employee movement and headcount information.
+                    </p>
+                    <button
+                      onClick={() => handleDownload(selectedKPI.details.dataSource)}
+                      className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                    >
+                      <Download className="w-5 h-5" />
+                      Download EDM Report
+                    </button>
+                  </div>
+                )}
+
+                {/* Status Badge */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                  <span className="text-sm text-slate-600 font-medium">Status:</span>
+                  <span
+                    className={`px-4 py-2 rounded-full text-sm font-bold ${
+                      selectedKPI.status === 'Start Tracking'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : selectedKPI.status === 'Planning'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {selectedKPI.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
