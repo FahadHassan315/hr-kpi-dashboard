@@ -37,6 +37,16 @@ const HRKPIDashboard = () => {
       status: 'In Progress',
       icon: '⏱️'
     },
+    {
+      companyPillar: 'Talent Acquisition',
+      hrPillar: 'Leadership & Culture',
+      kpi: 'Diversity & Inclusion Index',
+      target: 'Ensure an average of 10% workplace diversity (including age, gender and minority groups)',
+      currentValue: 0,
+      targetValue: 10,
+      status: 'In Progress',
+      icon: '🤝'
+    },
     // Talent Management Pillar
     {
       companyPillar: 'Talent Management',
@@ -218,6 +228,7 @@ const HRKPIDashboard = () => {
         </div>
 
         {/* KPI Cards grouped by Pillar */}
+        <div>
         {selectedPillar === 'all' ? (
           // Show all pillars with their KPIs
           Object.keys(pillarColors).map((pillar) => {
@@ -358,6 +369,7 @@ const HRKPIDashboard = () => {
             </div>
           </div>
         )}
+        </div>
 
         {/* Implementation Guide */}
         <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
