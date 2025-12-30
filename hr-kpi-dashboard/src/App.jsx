@@ -60,14 +60,15 @@ const HRKPIDashboard = () => {
       hrPillar: 'Leadership & Culture',
       kpi: 'Diversity & Inclusion Index',
       target: 'Ensure an average of 10% workplace diversity (including age, gender and minority groups)',
-      currentValue: 0,
+      currentValue: 27.9,
       targetValue: 10,
       status: 'In Progress',
       icon: '🤝',
       details: {
-        description: 'Tracks workplace diversity across multiple dimensions including age, gender, and minority representation.',
-        dataSource: null,
-        formula: null
+        description: 'Tracks workplace diversity across multiple dimensions including age, gender, and minority representation. Derived from the EDM Report',
+        dataSource: '/data/EDM_Report.xlsx',
+        formula: 'Diversity Index = Average of (Gender Diversity + Age Diversity + Religious Diversity)',
+        additionalInfo: 'The current diversity index of 27.9% indicates the organization has exceeded its 10% target, showing strong representation across gender, age groups, and religious backgrounds. This composite metric provides a holistic view of workplace diversity.'
       }
     },
     // Talent Management Pillar
