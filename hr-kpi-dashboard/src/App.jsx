@@ -508,14 +508,16 @@ const HRKPIDashboard = () => {
                       <p className="text-sm font-semibold text-green-800 uppercase tracking-wide">Data Source</p>
                     </div>
                     <p className="text-slate-700 mb-4">
-                      The data for this KPI is sourced from the EDM Report, which contains detailed employee movement and headcount information.
+                      {selectedKPI.kpi === 'Time to Fill' 
+                        ? 'The data for this KPI is sourced from the Recruitment Tracker, which monitors the complete hiring process from job posting to offer acceptance.'
+                        : 'The data for this KPI is sourced from the EDM Report, which contains detailed employee movement and headcount information.'}
                     </p>
                     <button
                       onClick={() => handleDownload(selectedKPI.details.dataSource)}
                       className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                     >
                       <Download className="w-5 h-5" />
-                      Download EDM Report
+                      {selectedKPI.kpi === 'Time to Fill' ? 'Download Recruitment Tracker' : 'Download EDM Report'}
                     </button>
                   </div>
                 )}
