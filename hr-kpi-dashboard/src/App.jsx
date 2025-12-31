@@ -45,14 +45,15 @@ const HRKPIDashboard = () => {
       hrPillar: 'P&C Organization',
       kpi: 'Time to Fill',
       target: 'Reduce average time to fill critical positions by 5%',
-      currentValue: 0,
+      currentValue: -14,
       targetValue: 5,
       status: 'In Progress',
       icon: '⏱️',
       details: {
         description: 'Measures the efficiency of the recruitment process by tracking days from job posting to offer acceptance.',
-        dataSource: null,
-        formula: null
+        dataSource: '/data/Recruitment_Tracker.xlsx',
+        formula: 'This KPI tracks the average Time to Fill using system-recorded values. The 2024 average serves as the baseline, while 2025 performance is measured against a 5% reduction target. Negative values and extreme outliers have been excluded to ensure data accuracy and meaningful trend analysis.',
+        additionalInfo: 'Average Time to Fill increased by 14% in 2025 compared to the 2024 baseline, indicating a slower hiring cycle. The 2025 target of a 5% reduction has not yet been achieved. Further analysis is required to identify drivers such as role criticality, candidate availability, or approval delays.'
       }
     },
     {
