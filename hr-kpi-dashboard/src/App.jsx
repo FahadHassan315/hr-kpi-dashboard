@@ -108,14 +108,15 @@ const HRKPIDashboard = () => {
       hrPillar: 'Leadership & Culture',
       kpi: 'Employee Engagement Score',
       target: 'Achieve at least 20% engagement',
-      currentValue: 0,
+      currentValue: 69,
       targetValue: 20,
       status: 'In Progress',
       icon: '💪',
       details: {
-        description: 'Measures employee satisfaction, commitment, and motivation through regular surveys and feedback.',
-        dataSource: null,
-        formula: null
+        description: 'Measures employee satisfaction, advocacy, and cultural alignment using employee survey responses. The score is derived from eNPS and company culture ratings to assess overall engagement across the organization.',
+        dataSource: '/data/ENPS_CNPS_Survey.xlsx',
+        formula: 'Employee Engagement Score (%) = Average of (eNPS Percentage + Culture Score Percentage)',
+        additionalInfo: 'The current engagement score reflects employee willingness to recommend the organization and their perception of company culture. A score above the 20% target indicates healthy engagement, motivation, and commitment levels across the workforce.'
       }
     },
     // Learning Pillar
@@ -510,6 +511,8 @@ const HRKPIDashboard = () => {
                     <p className="text-slate-700 mb-4">
                       {selectedKPI.kpi === 'Time to Fill' 
                         ? 'The data for this KPI is sourced from the Recruitment Tracker, which monitors the complete hiring process from job posting to offer acceptance.'
+                        : selectedKPI.kpi === 'Employee Engagement Score'
+                        ? 'The data for this KPI is sourced from the eNPS & cNPS Survey, which captures employee sentiment, satisfaction, and advocacy levels through structured feedback mechanisms.'
                         : 'The data for this KPI is sourced from the EDM Report, which contains detailed employee movement and headcount information.'}
                     </p>
                     <button
@@ -517,7 +520,11 @@ const HRKPIDashboard = () => {
                       className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                     >
                       <Download className="w-5 h-5" />
-                      {selectedKPI.kpi === 'Time to Fill' ? 'Download Recruitment Tracker' : 'Download EDM Report'}
+                      {selectedKPI.kpi === 'Time to Fill' 
+                        ? 'Download Recruitment Tracker' 
+                        : selectedKPI.kpi === 'Employee Engagement Score'
+                        ? 'Download eNPS & cNPS Survey'
+                        : 'Download EDM Report'}
                     </button>
                   </div>
                 )}
