@@ -125,14 +125,15 @@ const HRKPIDashboard = () => {
       hrPillar: 'Talent & Skills',
       kpi: 'AI Training',
       target: '35% of permanent employees trained in AI tools',
-      currentValue: 0,
+      currentValue: 75,
       targetValue: 35,
       status: 'In Progress',
       icon: '🎓',
       details: {
-        description: 'Tracks the percentage of employees who have completed AI tools training programs.',
+        description: 'Tracks the percentage of employees who have participated in AI tools training programs.',
         dataSource: null,
-        formula: null
+        formula: 'AI Learning Participation represents the number of unique employees who engaged in learning content related to Artificial Intelligence, identified through skill tagging and measured at the individual employee level.'
+        additionalInfo: 'A 75% AI training participation rate demonstrates widespread employee engagement in AI skill development and strong alignment with organizational learning priorities.'
       }
     },
     {
