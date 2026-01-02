@@ -140,14 +140,16 @@ const HRKPIDashboard = () => {
       hrPillar: 'Talent & Skills',
       kpi: 'Talent Development',
       target: '60% completion rate of skill development',
-      currentValue: 0,
+      currentValue: 6.7,
       targetValue: 60,
       status: 'In Progress',
       icon: '📚',
       details: {
         description: 'Measures the completion rate of assigned learning and development programs across the organization.',
-        dataSource: null,
-        formula: null
+        dataSource: '/data/Linkedinlearning.xlsx',
+        formula: 'Employees completing target/total Employee * 100',
+        additionalInfo: 'The target is considered complete once employees fulfill their assigned LinkedIn Learning hours. At present, 6.7% of employees have met this target.'
+}
       }
     }
   ];
