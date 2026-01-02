@@ -149,7 +149,6 @@ const HRKPIDashboard = () => {
         dataSource: '/data/Linkedinlearning.xlsx',
         formula: 'Employees completing target/total Employee * 100',
         additionalInfo: 'The target is considered complete once employees fulfill their assigned LinkedIn Learning hours. At present, 6.7% of employees have met this target.'
-}
       }
     }
   ];
