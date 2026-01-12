@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Users, Target, Award, BookOpen, Briefcase, X, Download, FileSpreadsheet, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import * as XLSX from 'xlsx';
 
 const HRKPIDashboard = () => {
   const [selectedPillar, setSelectedPillar] = useState('all');
@@ -15,6 +14,30 @@ const HRKPIDashboard = () => {
     recruitmentTracker: null,
     enpsSurvey: null
   });
+
+  // Parse Excel file
+  const parseExcelFile = async (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          resolve(jsonData);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
 
   // Default KPI data structure
   const getKPIData = () => [
@@ -182,20 +205,17 @@ const HRKPIDashboard = () => {
       const startDate = new Date('2025-07-01');
       const endDate = new Date('2025-12-31');
 
-      // Parse dates safely
       const parseDate = (dateStr) => {
         if (!dateStr) return null;
         const date = new Date(dateStr);
         return isNaN(date.getTime()) ? null : date;
       };
 
-      // Step 1: Count exits
       const exits = data.filter(row => {
         const exitDate = parseDate(row['Exit Date']);
         return exitDate && exitDate >= startDate && exitDate <= endDate;
       }).length;
 
-      // Step 2: Headcount at start
       const headcountStart = data.filter(row => {
         const joiningDate = parseDate(row['Joining Date']);
         const exitDate = parseDate(row['Exit Date']);
@@ -203,7 +223,6 @@ const HRKPIDashboard = () => {
                (!exitDate || exitDate >= startDate);
       }).length;
 
-      // Step 3: Headcount at end
       const headcountEnd = data.filter(row => {
         const joiningDate = parseDate(row['Joining Date']);
         const exitDate = parseDate(row['Exit Date']);
@@ -211,10 +230,7 @@ const HRKPIDashboard = () => {
                (!exitDate || exitDate > endDate);
       }).length;
 
-      // Step 4: Average headcount
       const avgHeadcount = (headcountStart + headcountEnd) / 2;
-
-      // Step 5: Turnover rate
       const turnoverRate = avgHeadcount > 0 ? (exits / avgHeadcount) * 100 : 0;
 
       return parseFloat(turnoverRate.toFixed(1));
@@ -235,7 +251,6 @@ const HRKPIDashboard = () => {
         return isNaN(date.getTime()) ? null : date;
       };
 
-      // Create adjusted time to fill values
       const validValues = data
         .filter(row => {
           const erfDate = parseDate(row['ERF Received On']);
@@ -272,7 +287,6 @@ const HRKPIDashboard = () => {
       const enpsColumn = 'How likely are you to recommend JBS to a friend or colleague?';
       const cultureColumn = 'How would you rate the company culture?';
 
-      // Step 1: Classify ENPS responses
       let promoters = 0, passives = 0, detractors = 0;
       
       data.forEach(row => {
@@ -287,13 +301,9 @@ const HRKPIDashboard = () => {
       const totalResponses = promoters + passives + detractors;
       if (totalResponses === 0) return null;
 
-      // Step 2: Calculate ENPS
       const enps = ((promoters / totalResponses) - (detractors / totalResponses)) * 100;
-
-      // Step 3: Normalize ENPS
       const enpsPercentage = (enps + 100) / 2;
 
-      // Step 4: Calculate culture score
       const cultureScores = data
         .map(row => {
           const rating = parseFloat(row[cultureColumn]);
@@ -304,8 +314,6 @@ const HRKPIDashboard = () => {
       if (cultureScores.length === 0) return null;
 
       const avgCultureScore = cultureScores.reduce((sum, score) => sum + score, 0) / cultureScores.length;
-
-      // Step 5: Final engagement score
       const engagementScore = (enpsPercentage * 0.5) + (avgCultureScore * 0.5);
 
       return parseFloat(engagementScore.toFixed(1));
@@ -320,7 +328,6 @@ const HRKPIDashboard = () => {
       const totalEmployees = data.length;
       if (totalEmployees === 0) return null;
 
-      // Helper function to calculate diversity score
       const calculateDiversity = (counts) => {
         const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
         if (total === 0) return 0;
@@ -330,7 +337,6 @@ const HRKPIDashboard = () => {
         return 1 - sumOfSquares;
       };
 
-      // A) Gender Diversity
       const genderCounts = {};
       data.forEach(row => {
         const gender = row['Gender'];
@@ -340,7 +346,6 @@ const HRKPIDashboard = () => {
       });
       const genderDiversity = calculateDiversity(genderCounts);
 
-      // B) Age Diversity
       const ageCounts = { 'under30': 0, '30to50': 0, 'over50': 0 };
       data.forEach(row => {
         const age = parseFloat(row["Employee's Age"]);
@@ -352,7 +357,6 @@ const HRKPIDashboard = () => {
       });
       const ageDiversity = calculateDiversity(ageCounts);
 
-      // C) Religion Diversity
       const religionCounts = {};
       data.forEach(row => {
         const religion = row['Religion'];
@@ -362,7 +366,6 @@ const HRKPIDashboard = () => {
       });
       const religionDiversity = calculateDiversity(religionCounts);
 
-      // Final diversity index (as percentage)
       const diversityIndex = ((genderDiversity + ageDiversity + religionDiversity) / 3) * 100;
 
       return parseFloat(diversityIndex.toFixed(1));
@@ -372,23 +375,15 @@ const HRKPIDashboard = () => {
     }
   };
 
-  // File upload handler
   const handleFileUpload = async (fileType, file) => {
     if (!file) return;
 
     setUploadStatus(prev => ({ ...prev, [fileType]: 'processing' }));
 
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-      // Store the uploaded file data
+      const jsonData = await parseExcelFile(file);
       setUploadedFiles(prev => ({ ...prev, [fileType]: jsonData }));
 
-      // Calculate KPIs based on file type
       let newCalculations = { ...calculatedKPIs };
 
       if (fileType === 'edmReport') {
@@ -711,3 +706,188 @@ const HRKPIDashboard = () => {
                   {React.createElement(pillarIcons[selectedPillar], { 
                     className: "w-6 h-6",
                     style: { color: pillarColors[selectedPillar] }
+                  })}
+                </div>
+                <h2 className="text-2xl font-bold text-slate-800">{selectedPillar}</h2>
+                <span className="text-sm text-slate-500">({filteredData.length} KPIs)</span>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredData.map((kpi, index) => (
+                  <KPICard key={index} kpi={kpi} index={index} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Implementation Guide */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+          <h2 className="text-2xl font-bold text-slate-800 mb-4">Implementation Roadmap</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="font-bold text-blue-900 mb-2">Q1 2025: Foundation</h3>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Establish baseline metrics</li>
+                <li>• Set up tracking systems</li>
+                <li>• Launch "Start Tracking" KPIs</li>
+                <li>• Train stakeholders</li>
+              </ul>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4">
+              <h3 className="font-bold text-green-900 mb-2">Q2-Q3 2025: Execution</h3>
+              <ul className="text-sm text-green-800 space-y-1">
+                <li>• Implement initiatives</li>
+                <li>• Monitor progress monthly</li>
+                <li>• Adjust strategies as needed</li>
+                <li>• Report to leadership</li>
+              </ul>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-4">
+              <h3 className="font-bold text-purple-900 mb-2">Q4 2025: Review</h3>
+              <ul className="text-sm text-purple-800 space-y-1">
+                <li>• Evaluate performance</li>
+                <li>• Identify gaps</li>
+                <li>• Plan for 2026</li>
+                <li>• Celebrate successes</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Upload Modal */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-800">Upload Data Files</h2>
+                  <p className="text-sm text-slate-600 mt-1">Upload Excel files to automatically calculate KPIs</p>
+                </div>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-slate-600" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <FileUploadSection
+                  fileType="edmReport"
+                  label="EDM Report"
+                  description="Employee Data Management report containing joining dates, exit dates, demographics"
+                />
+                
+                <FileUploadSection
+                  fileType="recruitmentTracker"
+                  label="Recruitment Tracker"
+                  description="Recruitment data with ERF dates, joining dates, and time to fill metrics"
+                />
+                
+                <FileUploadSection
+                  fileType="enpsSurvey"
+                  label="eNPS & cNPS Survey"
+                  description="Employee Net Promoter Score and company culture survey responses"
+                />
+
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <h3 className="font-semibold text-blue-900 mb-2">📊 Auto-Calculated KPIs</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• <strong>Turnover Rate</strong> - Calculated from EDM Report</li>
+                    <li>• <strong>Time to Fill</strong> - Calculated from Recruitment Tracker</li>
+                    <li>• <strong>Employee Engagement Score</strong> - Calculated from eNPS Survey</li>
+                    <li>• <strong>Diversity Index</strong> - Calculated from EDM Report</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* KPI Details Modal */}
+        {showModal && selectedKPI && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">{selectedKPI.icon}</span>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">{selectedKPI.kpi}</h2>
+                    <p className="text-sm text-slate-500">{selectedKPI.companyPillar} • {selectedKPI.hrPillar}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-slate-600" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Current Value</span>
+                    <span className="text-4xl font-bold text-slate-800">{selectedKPI.currentValue}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-3 mt-3">
+                    <div
+                      className="h-3 rounded-full transition-all"
+                      style={{
+                        width: `${Math.min((Math.abs(selectedKPI.currentValue) / Math.abs(selectedKPI.targetValue)) * 100, 100)}%`,
+                        backgroundColor: pillarColors[selectedKPI.companyPillar]
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">2025 Target</p>
+                  <p className="text-slate-800">{selectedKPI.target}</p>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">Description</p>
+                  <p className="text-slate-700">{selectedKPI.details.description}</p>
+                </div>
+
+                {selectedKPI.details.formula && (
+                  <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+                    <p className="text-sm font-semibold text-blue-800 uppercase tracking-wide mb-3">Calculation Formula</p>
+                    <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-800 border border-blue-300">
+                      {selectedKPI.details.formula}
+                    </div>
+                  </div>
+                )}
+
+                {selectedKPI.details.additionalInfo && (
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                    <p className="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-2">Additional Information</p>
+                    <p className="text-slate-700">{selectedKPI.details.additionalInfo}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                  <span className="text-sm text-slate-600 font-medium">Status:</span>
+                  <span
+                    className={`px-4 py-2 rounded-full text-sm font-bold ${
+                      selectedKPI.status === 'Start Tracking'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : selectedKPI.status === 'Planning'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {selectedKPI.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default HRKPIDashboard;
