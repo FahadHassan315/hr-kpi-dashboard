@@ -338,46 +338,44 @@ const parseExcelFile = async (file) => {
     
     return average;
   };
-  
+    
   const calculateTimeToFill = (data) => {
     try {
       const startDate = new Date('2025-07-01');
       const today = new Date();
   
-      const validValues = data
-        .filter(row => {
-          const erfDate = parseMaybeDate(row['ERF Received On']);
-          const joiningDate = parseMaybeDate(row['Joining Date']);
-          const status = row['Status'];
-          const timeToFillRaw = row['Time To Fill'];
-          
-          // Must match Excel criteria:
-          // 1. ERF date in range (July 1, 2025 to today)
-          // 2. Has joining date
-          // 3. Status = "Hired"
-          // 4. Has Time To Fill value
-          return erfDate && 
-                 erfDate >= startDate && 
-                 erfDate <= today && 
-                 joiningDate && 
-                 status === 'Hired' &&
-                 timeToFillRaw != null &&
-                 timeToFillRaw !== '';
-        })
-        .map(row => {
-          let ttf = parseFloat(row['Time To Fill']);
-          
-          // Step 1 logic: IF(AO2<0, 0, AO2)
-          if (isNaN(ttf) || ttf < 0) {
-            return 0;
+      const step1Results = [];
+      
+      data.forEach((row) => {
+        const erfDate = parseMaybeDate(row['ERF Received On']);
+        const joiningDate = parseMaybeDate(row['Joining Date']);
+        const status = row['Status'];
+        const timeToFillRaw = row['Time To Fill'];
+        
+        // Step 1: Calculate Time to Fill (2) - match Excel logic
+        let timeToFill2;
+        if (erfDate && joiningDate && status === 'Hired') {
+          const ttfRaw = parseFloat(timeToFillRaw);
+          if (isNaN(ttfRaw) || ttfRaw < 0) {
+            timeToFill2 = 0;
+          } else {
+            timeToFill2 = ttfRaw;
           }
-          return ttf;
-        })
-        .filter(val => val >= 0); // Step 2: only include >= 0
+        } else {
+          timeToFill2 = null; // Not hired
+        }
+        
+        // Step 2: Check if ERF is in range for averaging
+        const inRange = erfDate && erfDate >= startDate && erfDate <= today;
+        
+        if (typeof timeToFill2 === 'number' && inRange && timeToFill2 >= 0) {
+          step1Results.push(timeToFill2);
+        }
+      });
+      
+      if (step1Results.length === 0) return null;
   
-      if (validValues.length === 0) return null;
-  
-      const average = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+      const average = step1Results.reduce((sum, val) => sum + val, 0) / step1Results.length;
       return parseFloat(average.toFixed(1));
     } catch (error) {
       console.error('Error calculating time to fill:', error);
