@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-
-const handleFileUpload = async (file) => {
-  const XLSX = await import("xlsx");
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data);
-  console.log(workbook);
-};
-
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, BookOpen, Briefcase, X, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const HRKPIDashboard = () => {
