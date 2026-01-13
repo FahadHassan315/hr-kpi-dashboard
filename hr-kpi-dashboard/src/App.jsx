@@ -40,29 +40,48 @@ const HRKPIDashboard = () => {
   };
 
   // Parse Excel file using local xlsx package
-  const parseExcelFile = async (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+const parseExcelFile = async (file) => {
+  return new Promise((resolve, reject) => {
+    console.log('Starting to parse file:', file.name, file.type, file.size);
+    
+    const reader = new FileReader();
 
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          // Ask sheet_to_json to return Dates when possible and not return undefined cells
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: false, cellDates: true, dateNF: 'yyyy-mm-dd' });
-          resolve(jsonData);
-        } catch (error) {
-          reject(error);
-        }
-      };
+    reader.onload = (e) => {
+      try {
+        console.log('File loaded, parsing...');
+        const data = new Uint8Array(e.target.result);
+        console.log('Data array length:', data.length);
+        
+        const workbook = XLSX.read(data, { type: 'array' });
+        console.log('Workbook parsed, sheets:', workbook.SheetNames);
+        
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+          defval: null, 
+          raw: false, 
+          cellDates: true, 
+          dateNF: 'yyyy-mm-dd' 
+        });
+        
+        console.log('JSON data created, rows:', jsonData.length);
+        console.log('First row sample:', jsonData[0]);
+        
+        resolve(jsonData);
+      } catch (error) {
+        console.error('Error in onload:', error);
+        reject(error);
+      }
+    };
 
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  // Default KPI data structure
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      reject(new Error('Failed to read file'));
+    };
+    
+    reader.readAsArrayBuffer(file);
+  });
+};
   const getKPIData = () => [
     {
       companyPillar: 'Talent Acquisition',
@@ -393,46 +412,65 @@ const HRKPIDashboard = () => {
     }
   };
 
-  const handleFileUpload = async (fileType, file) => {
-    if (!file) return;
+const handleFileUpload = async (fileType, file) => {
+  if (!file) {
+    console.log('No file provided');
+    return;
+  }
+
+  console.log('=== FILE UPLOAD START ===');
+  console.log('File type:', fileType);
+  console.log('File name:', file.name);
+  console.log('File size:', file.size);
+
+  setUploadStatus(prev => ({ ...prev, [fileType]: 'processing' }));
+
+  try {
+    const jsonData = await parseExcelFile(file);
+    console.log('Parse successful, calculating KPIs...');
     
-    console.log('Uploading file:', file.name, 'Type:', fileType);
+    setUploadedFiles(prev => ({ ...prev, [fileType]: jsonData }));
 
-    setUploadStatus(prev => ({ ...prev, [fileType]: 'processing' }));
+    let newCalculations = { ...calculatedKPIs };
 
-    try {
-      const jsonData = await parseExcelFile(file);
-      setUploadedFiles(prev => ({ ...prev, [fileType]: jsonData }));
+    if (fileType === 'edmReport') {
+      console.log('Calculating turnover and diversity...');
+      const turnoverRate = calculateTurnoverRate(jsonData);
+      const diversityIndex = calculateDiversityIndex(jsonData);
+      console.log('Turnover:', turnoverRate, 'Diversity:', diversityIndex);
 
-      let newCalculations = { ...calculatedKPIs };
-
-      if (fileType === 'edmReport') {
-        const turnoverRate = calculateTurnoverRate(jsonData);
-        const diversityIndex = calculateDiversityIndex(jsonData);
-
-        if (turnoverRate !== null) newCalculations.turnoverRate = turnoverRate;
-        if (diversityIndex !== null) newCalculations.diversityIndex = diversityIndex;
-      } else if (fileType === 'recruitmentTracker') {
-        const timeToFill = calculateTimeToFill(jsonData);
-        if (timeToFill !== null) newCalculations.timeToFill = timeToFill;
-      } else if (fileType === 'enpsSurvey') {
-        const engagementScore = calculateEngagementScore(jsonData);
-        if (engagementScore !== null) newCalculations.engagementScore = engagementScore;
-      }
-
-      setCalculatedKPIs(newCalculations);
-      setUploadStatus(prev => ({ ...prev, [fileType]: 'success' }));
-
-      setTimeout(() => {
-        setUploadStatus(prev => ({ ...prev, [fileType]: null }));
-      }, 3000);
-
-    } catch (error) {
-  console.error('Error processing file:', error);
-  console.error('Error details:', error.message, error.stack);
-  setUploadStatus(prev => ({ ...prev, [fileType]: 'error' }));
+      if (turnoverRate !== null) newCalculations.turnoverRate = turnoverRate;
+      if (diversityIndex !== null) newCalculations.diversityIndex = diversityIndex;
+    } else if (fileType === 'recruitmentTracker') {
+      console.log('Calculating time to fill...');
+      const timeToFill = calculateTimeToFill(jsonData);
+      console.log('Time to fill:', timeToFill);
+      
+      if (timeToFill !== null) newCalculations.timeToFill = timeToFill;
+    } else if (fileType === 'enpsSurvey') {
+      console.log('Calculating engagement score...');
+      const engagementScore = calculateEngagementScore(jsonData);
+      console.log('Engagement score:', engagementScore);
+      
+      if (engagementScore !== null) newCalculations.engagementScore = engagementScore;
     }
-  };
+
+    setCalculatedKPIs(newCalculations);
+    setUploadStatus(prev => ({ ...prev, [fileType]: 'success' }));
+    console.log('=== FILE UPLOAD SUCCESS ===');
+
+    setTimeout(() => {
+      setUploadStatus(prev => ({ ...prev, [fileType]: null }));
+    }, 3000);
+
+  } catch (error) {
+    console.error('=== FILE UPLOAD FAILED ===');
+    console.error('Error type:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    setUploadStatus(prev => ({ ...prev, [fileType]: 'error' }));
+  }
+};
 
   const pillarColors = {
     'Talent Acquisition': '#3498DB',
