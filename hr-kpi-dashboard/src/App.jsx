@@ -395,6 +395,8 @@ const HRKPIDashboard = () => {
 
   const handleFileUpload = async (fileType, file) => {
     if (!file) return;
+    
+    console.log('Uploading file:', file.name, 'Type:', fileType);
 
     setUploadStatus(prev => ({ ...prev, [fileType]: 'processing' }));
 
@@ -426,8 +428,9 @@ const HRKPIDashboard = () => {
       }, 3000);
 
     } catch (error) {
-      console.error('Error processing file:', error);
-      setUploadStatus(prev => ({ ...prev, [fileType]: 'error' }));
+  console.error('Error processing file:', error);
+  console.error('Error details:', error.message, error.stack);
+  setUploadStatus(prev => ({ ...prev, [fileType]: 'error' }));
     }
   };
 
