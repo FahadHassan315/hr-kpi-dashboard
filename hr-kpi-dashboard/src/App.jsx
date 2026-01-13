@@ -13,7 +13,9 @@ const HRKPIDashboard = () => {
   const [uploadedFiles, setUploadedFiles] = useState({
     edmReport: null,
     recruitmentTracker: null,
-    enpsSurvey: null
+    enpsSurvey: null,
+    linkedinLearnerDetail: null,
+    linkedinLearning: null
   });
 
   // Utility: convert Excel serial date to JS Date (handles numbers produced by some XLSX exports)
@@ -112,7 +114,7 @@ const parseExcelFile = async (file) => {
       dataFile: 'edmReport',
       details: {
         description: 'The turnover rate for the year 2025 is calculated from the EDM Report, which tracks employee exits and headcount data throughout the year.',
-        dataSource: '/data/EDM_Report.xlsx',
+        dataSource: 'EDM Report',
         formula: 'Turnover Rate (%) = (Number of Exits / Average Headcount) × 100',
         additionalInfo: 'This metric helps identify retention challenges and measure the effectiveness of employee engagement initiatives.'
       }
@@ -131,7 +133,7 @@ const parseExcelFile = async (file) => {
       dataFile: 'recruitmentTracker',
       details: {
         description: 'Measures the efficiency of the recruitment process by tracking days from job posting to offer acceptance.',
-        dataSource: '/data/Recruitment_Tracker.xlsx',
+        dataSource: 'Recruitment Tracker',
         formula: 'This KPI tracks the average Time to Fill using system-recorded values. The 2024 average serves as the baseline, while 2025 performance is measured against a 5% reduction target.',
         additionalInfo: 'Average Time to Fill increased by 14% in 2025 compared to the 2024 baseline, indicating a slower hiring cycle.'
       }
@@ -149,7 +151,7 @@ const parseExcelFile = async (file) => {
       dataFile: 'edmReport',
       details: {
         description: 'Tracks workplace diversity across multiple dimensions including age, gender, and minority representation.',
-        dataSource: '/data/EDM_Report.xlsx',
+        dataSource: 'EDM Report',
         formula: 'Diversity Index = Average of (Gender Diversity + Age Diversity + Religious Diversity)',
         additionalInfo: 'The current diversity index indicates the organization has exceeded its 10% target, showing strong representation across gender, age groups, and religious backgrounds.'
       }
@@ -199,7 +201,7 @@ const parseExcelFile = async (file) => {
       dataFile: 'enpsSurvey',
       details: {
         description: 'Measures employee satisfaction, advocacy, and cultural alignment using employee survey responses.',
-        dataSource: '/data/ENPS_CNPS_Survey.xlsx',
+        dataSource: 'eNPS & cNPS Survey',
         formula: 'Employee Engagement Score (%) = Average of (eNPS Percentage + Culture Score Percentage)',
         additionalInfo: 'The current engagement score reflects employee willingness to recommend the organization and their perception of company culture.'
       }
@@ -209,16 +211,18 @@ const parseExcelFile = async (file) => {
       hrPillar: 'Talent & Skills',
       kpi: 'AI Training',
       target: '35% of permanent employees trained in AI tools',
-      currentValue: 75,
+      currentValue: calculatedKPIs.aiTraining !== undefined ? calculatedKPIs.aiTraining : 75,
       targetValue: 35,
       status: 'In Progress',
       icon: '🎓',
-      calculable: false,
+      calculable: true,
+      dataFile: 'linkedinLearnerDetail',
+      dataSource: 'LinkedIn Learner Detail Report',
       details: {
-        description: 'Tracks the percentage of employees who have participated in AI tools training programs.',
-        dataSource: null,
-        formula: 'AI Learning Participation represents the number of unique employees who engaged in learning content related to Artificial Intelligence.',
-        additionalInfo: 'A 75% AI training participation rate demonstrates widespread employee engagement in AI skill development.'
+        description: 'Tracks the percentage of employees who have completed AI tools training programs with 80% or higher completion rate.',
+        dataSource: 'LinkedIn Learner Detail Report',
+        formula: 'AI Training (%) = (Distinct Emails with ≥80% completion in AI/Artificial Intelligence courses / Total Employees from EDM) × 100',
+        additionalInfo: 'Employees are considered AI-trained if they have completed at least 80% of any course with "AI" or "Artificial Intelligence" in the skills column.'
       }
     },
     {
@@ -226,22 +230,97 @@ const parseExcelFile = async (file) => {
       hrPillar: 'Talent & Skills',
       kpi: 'Talent Development',
       target: '60% completion rate of skill development',
-      currentValue: 6.7,
+      currentValue: calculatedKPIs.talentDevelopment !== undefined ? calculatedKPIs.talentDevelopment : 6.7,
       targetValue: 60,
       status: 'In Progress',
       icon: '📚',
-      calculable: false,
+      calculable: true,
+      dataFile: 'linkedinLearning',
+      dataSource: 'LinkedIn Learning Report',
       details: {
-        description: 'Measures the completion rate of assigned learning and development programs across the organization.',
-        dataSource: '/data/Linkedinlearning.xlsx',
-        formula: 'Employees completing target/total Employee * 100',
-        additionalInfo: 'The target is considered complete once employees fulfill their assigned LinkedIn Learning hours.'
+        description: 'Measures the percentage of employees who have completed 80% or more of their assigned learning and development target hours.',
+        dataSource: 'LinkedIn Learning Report',
+        formula: 'Talent Development (%) = (Employees with ≥80% target completion / Total Employees in sheet) × 100',
+        additionalInfo: 'Employees are considered to have fulfilled their talent development target once they complete at least 80% of their assigned LinkedIn Learning hours.'
       }
     }
   ];
 
   const kpiData = getKPIData();
-
+  const calculateAITraining = (learnerData, edmData) => {
+    try {
+      const totalEmployees = edmData.length;
+      if (totalEmployees === 0) return null;
+  
+      const aiTrainedEmails = new Set();
+  
+      learnerData.forEach(row => {
+        const email = row['Email'];
+        const percentCompleted = row['Percent Completed'];
+        const skills = row['Skills'];
+  
+        if (!email || !skills) return;
+  
+        // Check if skills contain AI or Artificial Intelligence
+        const skillsLower = skills.toLowerCase();
+        const isAICourse = skillsLower.includes('artificial intelligence') || 
+                          skillsLower.includes(' ai ') || 
+                          skillsLower.startsWith('ai ') || 
+                          skillsLower.endsWith(' ai');
+  
+        if (isAICourse) {
+          let completionPercent = 0;
+          if (typeof percentCompleted === 'string') {
+            completionPercent = parseFloat(percentCompleted.replace('%', ''));
+          } else if (typeof percentCompleted === 'number') {
+            completionPercent = percentCompleted;
+          }
+  
+          if (completionPercent >= 80) {
+            aiTrainedEmails.add(email.trim().toLowerCase());
+          }
+        }
+      });
+  
+      const aiTrainingRate = (aiTrainedEmails.size / totalEmployees) * 100;
+      return parseFloat(aiTrainingRate.toFixed(1));
+    } catch (error) {
+      console.error('Error calculating AI training:', error);
+      return null;
+    }
+  };
+  
+  const calculateTalentDevelopment = (learningData) => {
+    try {
+      const uniqueEmails = new Set();
+      const completedEmails = new Set();
+  
+      learningData.forEach(row => {
+        const email = row['Email'];
+        const target = parseFloat(row['Target']);
+        const remainingHours = parseFloat(row['Remaining Hours']);
+  
+        if (!email || isNaN(target) || isNaN(remainingHours)) return;
+  
+        uniqueEmails.add(email.trim().toLowerCase());
+  
+        const completedHours = target - remainingHours;
+        const completionPercent = (completedHours / target) * 100;
+  
+        if (completionPercent >= 80) {
+          completedEmails.add(email.trim().toLowerCase());
+        }
+      });
+  
+      if (uniqueEmails.size === 0) return null;
+  
+      const talentDevelopmentRate = (completedEmails.size / uniqueEmails.size) * 100;
+      return parseFloat(talentDevelopmentRate.toFixed(1));
+    } catch (error) {
+      console.error('Error calculating talent development:', error);
+      return null;
+    }
+  };
   // KPI Calculation Functions
   const calculateTurnoverRate = (data) => {
     try {
@@ -506,9 +585,14 @@ const handleFileUpload = async (fileType, file) => {
 
       if (turnoverRate !== null) newCalculations.turnoverRate = turnoverRate;
       if (diversityIndex !== null) newCalculations.diversityIndex = diversityIndex;
+
+      // Recalculate AI Training if LinkedIn Learner Detail is already uploaded
+      if (uploadedFiles.linkedinLearnerDetail) {
+        const aiTraining = calculateAITraining(uploadedFiles.linkedinLearnerDetail, jsonData);
+        if (aiTraining !== null) newCalculations.aiTraining = aiTraining;
+      }
     } else if (fileType === 'recruitmentTracker') {
       console.log('Calculating time to fill...');
-      debugTimeToFillDetailed(jsonData);
       const timeToFill = calculateTimeToFill(jsonData);
       console.log('Time to fill:', timeToFill);
       
@@ -519,6 +603,21 @@ const handleFileUpload = async (fileType, file) => {
       console.log('Engagement score:', engagementScore);
       
       if (engagementScore !== null) newCalculations.engagementScore = engagementScore;
+    } else if (fileType === 'linkedinLearnerDetail') {
+      console.log('Calculating AI training...');
+      if (uploadedFiles.edmReport) {
+        const aiTraining = calculateAITraining(jsonData, uploadedFiles.edmReport);
+        console.log('AI training:', aiTraining);
+        if (aiTraining !== null) newCalculations.aiTraining = aiTraining;
+      } else {
+        console.log('EDM Report needed for total employee count');
+      }
+    } else if (fileType === 'linkedinLearning') {
+      console.log('Calculating talent development...');
+      const talentDevelopment = calculateTalentDevelopment(jsonData);
+      console.log('Talent development:', talentDevelopment);
+      
+      if (talentDevelopment !== null) newCalculations.talentDevelopment = talentDevelopment;
     }
 
     setCalculatedKPIs(newCalculations);
@@ -537,7 +636,7 @@ const handleFileUpload = async (fileType, file) => {
     setUploadStatus(prev => ({ ...prev, [fileType]: 'error' }));
   }
 };
-
+  
   const pillarColors = {
     'Talent Acquisition': '#3498DB',
     'Talent Management': '#9B59B6',
@@ -920,6 +1019,18 @@ const handleFileUpload = async (fileType, file) => {
                   label="eNPS & cNPS Survey"
                   description="Employee Net Promoter Score and company culture survey responses"
                 />
+                
+                 <FileUploadSection
+                  fileType="linkedinLearnerDetail"
+                  label="LinkedIn Learner Detail Report"
+                  description="Individual learner data with email, percent completed, and skills for AI training tracking"
+                />
+              
+                <FileUploadSection
+                  fileType="linkedinLearning"
+                  label="LinkedIn Learning Report"
+                  description="Learning progress data with email, target hours, and remaining hours for talent development"
+                />
 
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <h3 className="font-semibold text-blue-900 mb-2">📊 Auto-Calculated KPIs</h3>
@@ -928,6 +1039,8 @@ const handleFileUpload = async (fileType, file) => {
                     <li>• <strong>Time to Fill</strong> - Calculated from Recruitment Tracker</li>
                     <li>• <strong>Employee Engagement Score</strong> - Calculated from eNPS Survey</li>
                     <li>• <strong>Diversity Index</strong> - Calculated from EDM Report</li>
+                    <li>• <strong>AI Training</strong> - Calculated from LinkedIn Learner Detail + EDM Report</li>
+                    <li>• <strong>Talent Development</strong> - Calculated from LinkedIn Learning Report</li>
                   </ul>
                 </div>
               </div>
@@ -957,35 +1070,27 @@ const handleFileUpload = async (fileType, file) => {
 
               <div className="p-6 space-y-6">
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Current Value</span>
-                    <span className="text-4xl font-bold text-slate-800">
-                      {selectedKPI.currentValue != null ? `${selectedKPI.currentValue}%` : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-3 mt-3">
-                    <div
-                      className="h-3 rounded-full transition-all"
-                      style={{
-                        width: `${(selectedKPI.targetValue && selectedKPI.currentValue != null)
-                          ? Math.min((Math.abs(selectedKPI.currentValue) / Math.abs(selectedKPI.targetValue)) * 100, 100)
-                          : 0
-                        }%`,
-                        backgroundColor: pillarColors[selectedKPI.companyPillar]
-                      }}
-                    />
-                  </div>
+                  {/* Current Value section */}
                 </div>
-
+              
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">2025 Target</p>
                   <p className="text-slate-800">{selectedKPI.target}</p>
                 </div>
-
+              
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">Description</p>
                   <p className="text-slate-700">{selectedKPI.details.description}</p>
                 </div>
+              
+                {/* ADD THIS NEW DATA SOURCE SECTION HERE */}
+                {selectedKPI.details.dataSource && (
+                  <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                    <p className="text-sm font-semibold text-green-800 uppercase tracking-wide mb-2">Data Source</p>
+                    <p className="text-slate-700 font-medium">{selectedKPI.details.dataSource}</p>
+                  </div>
+                )}
+                {/* END OF NEW DATA SOURCE SECTION */}
 
                 {selectedKPI.details.formula && (
                   <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
