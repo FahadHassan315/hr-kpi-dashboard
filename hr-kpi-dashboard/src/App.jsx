@@ -278,7 +278,67 @@ const parseExcelFile = async (file) => {
   };
 
   // Add this temporary debugging function to your component:
+// Add this temporary function to help debug:
+  const debugTimeToFillDetailed = (data) => {
+    console.log('=== DETAILED TIME TO FILL DEBUG ===');
     
+    const today = new Date();
+    const startDate = new Date('2025-07-01');
+    
+    console.log('Total rows:', data.length);
+    console.log('Date range: July 1, 2025 to', today.toISOString());
+    
+    const step1Results = [];
+    
+    data.forEach((row, idx) => {
+      const erfDate = parseMaybeDate(row['ERF Received On']);
+      const joiningDate = parseMaybeDate(row['Joining Date']);
+      const status = row['Status'];
+      const timeToFillRaw = row['Time To Fill'];
+      
+      // Step 1: Calculate Time to Fill (2) - your first step
+      let timeToFill2;
+      if (erfDate && joiningDate && status === 'Hired') {
+        const ttfRaw = parseFloat(timeToFillRaw);
+        if (isNaN(ttfRaw) || ttfRaw < 0) {
+          timeToFill2 = 0;
+        } else {
+          timeToFill2 = ttfRaw;
+        }
+      } else {
+        timeToFill2 = 'Not Hired';
+      }
+      
+      // Step 2: Check if ERF is in range for averaging
+      const inRange = erfDate && erfDate >= startDate && erfDate <= today;
+      
+      if (typeof timeToFill2 === 'number' && inRange) {
+        step1Results.push({
+          row: idx + 2, // Excel row number
+          erfDate: erfDate?.toISOString?.().split('T')[0],
+          joiningDate: joiningDate?.toISOString?.().split('T')[0],
+          status,
+          timeToFillOriginal: timeToFillRaw,
+          timeToFill2: timeToFill2
+        });
+      }
+    });
+    
+    console.log('Records matching criteria (ERF >= July 1, 2025, Hired, TTF >= 0):', step1Results.length);
+    console.log('Sample records:', step1Results.slice(0, 10));
+    
+    const validValues = step1Results.map(r => r.timeToFill2).filter(v => v >= 0);
+    const sum = validValues.reduce((a, b) => a + b, 0);
+    const average = validValues.length > 0 ? sum / validValues.length : 0;
+    
+    console.log('Valid TTF values:', validValues);
+    console.log('Sum:', sum);
+    console.log('Count:', validValues.length);
+    console.log('Average:', average.toFixed(1));
+    
+    return average;
+  };
+  
   const calculateTimeToFill = (data) => {
     try {
       const startDate = new Date('2025-07-01');
