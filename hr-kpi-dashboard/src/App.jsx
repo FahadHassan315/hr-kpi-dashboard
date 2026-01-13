@@ -278,41 +278,52 @@ const parseExcelFile = async (file) => {
   };
 
   // Add this temporary debugging function to your component:
-  
+    
   const calculateTimeToFill = (data) => {
-    const startDate = new Date('2025-07-01');
-    const today = new Date();
+    try {
+      const startDate = new Date('2025-07-01');
+      const today = new Date();
   
-    const validValues = data
-      .filter(row => {
-        const erfDate = parseMaybeDate(row['ERF Received On']);
-        const joiningDate = parseMaybeDate(row['Joining Date']);
-        const status = row['Status'];
-        const ttfRaw = row['Time To Fill'];
+      const validValues = data
+        .filter(row => {
+          const erfDate = parseMaybeDate(row['ERF Received On']);
+          const joiningDate = parseMaybeDate(row['Joining Date']);
+          const status = row['Status'];
+          const timeToFillRaw = row['Time To Fill'];
+          
+          // Must match Excel criteria:
+          // 1. ERF date in range (July 1, 2025 to today)
+          // 2. Has joining date
+          // 3. Status = "Hired"
+          // 4. Has Time To Fill value
+          return erfDate && 
+                 erfDate >= startDate && 
+                 erfDate <= today && 
+                 joiningDate && 
+                 status === 'Hired' &&
+                 timeToFillRaw != null &&
+                 timeToFillRaw !== '';
+        })
+        .map(row => {
+          let ttf = parseFloat(row['Time To Fill']);
+          
+          // Step 1 logic: IF(AO2<0, 0, AO2)
+          if (isNaN(ttf) || ttf < 0) {
+            return 0;
+          }
+          return ttf;
+        })
+        .filter(val => val >= 0); // Step 2: only include >= 0
   
-        // Only include rows with numeric TTF and status = Hired
-        const ttf = parseFloat(ttfRaw);
-        const isTTFValid = !isNaN(ttf);
+      if (validValues.length === 0) return null;
   
-        return erfDate &&
-               erfDate >= startDate &&
-               erfDate <= today &&
-               joiningDate &&
-               status === 'Hired' &&
-               isTTFValid;
-      })
-      .map(row => {
-        let ttf = parseFloat(row['Time To Fill']);
-        if (ttf < 0) ttf = 0; // negative → 0
-        return ttf;
-      });
-  
-    if (validValues.length === 0) return null;
-  
-    const average = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
-    return parseFloat(average.toFixed(1));
+      const average = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+      return parseFloat(average.toFixed(1));
+    } catch (error) {
+      console.error('Error calculating time to fill:', error);
+      return null;
+    }
   };
-
 
   const calculateEngagementScore = (data) => {
     try {
@@ -439,6 +450,7 @@ const handleFileUpload = async (fileType, file) => {
       if (diversityIndex !== null) newCalculations.diversityIndex = diversityIndex;
     } else if (fileType === 'recruitmentTracker') {
       console.log('Calculating time to fill...');
+      debugTimeToFillDetailed(jsonData);
       const timeToFill = calculateTimeToFill(jsonData);
       console.log('Time to fill:', timeToFill);
       
