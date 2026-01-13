@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Users, Target, Award, BookOpen, Briefcase, X, Download, FileSpreadsheet, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Users, BookOpen, Briefcase, X, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const HRKPIDashboard = () => {
   const [selectedPillar, setSelectedPillar] = useState('all');
@@ -15,25 +15,48 @@ const HRKPIDashboard = () => {
     enpsSurvey: null
   });
 
-  // Parse Excel file
+  // Utility: convert Excel serial date to JS Date (handles numbers produced by some XLSX exports)
+  const excelSerialToDate = (serial) => {
+    if (serial == null || serial === '') return null;
+    if (serial instanceof Date) return serial;
+    if (typeof serial !== 'number') return null;
+    // Convert Excel serial date (days since 1899-12-31) to JS Date
+    const utcDays = serial - 25569;
+    const utcValue = utcDays * 86400; // seconds
+    const date = new Date(utcValue * 1000);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Robust parser that accepts Date objects, ISO strings, or Excel serial numbers
+  const parseMaybeDate = (val) => {
+    if (!val && val !== 0) return null;
+    if (val instanceof Date) return val;
+    if (typeof val === 'number') {
+      return excelSerialToDate(val);
+    }
+    const dt = new Date(val);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
+
+  // Parse Excel file using local xlsx package
   const parseExcelFile = async (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
-      reader.onload = async (e) => {
+
+      reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result);
-          const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          // Ask sheet_to_json to return Dates when possible and not return undefined cells
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: false, cellDates: true, dateNF: 'yyyy-mm-dd' });
           resolve(jsonData);
         } catch (error) {
           reject(error);
         }
       };
-      
+
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsArrayBuffer(file);
     });
@@ -80,7 +103,8 @@ const HRKPIDashboard = () => {
       hrPillar: 'P&C Organization',
       kpi: 'Time to Fill',
       target: 'Reduce average time to fill critical positions by 5%',
-      currentValue: calculatedKPIs.timeToFill !== undefined ? calculatedKPIs.timeToFill : -14,
+      // Use null as default to indicate not available (avoids negative placeholder)
+      currentValue: calculatedKPIs.timeToFill !== undefined ? calculatedKPIs.timeToFill : null,
       targetValue: 5,
       status: 'In Progress',
       icon: '⏱️',
@@ -205,28 +229,22 @@ const HRKPIDashboard = () => {
       const startDate = new Date('2025-07-01');
       const endDate = new Date('2025-12-31');
 
-      const parseDate = (dateStr) => {
-        if (!dateStr) return null;
-        const date = new Date(dateStr);
-        return isNaN(date.getTime()) ? null : date;
-      };
-
       const exits = data.filter(row => {
-        const exitDate = parseDate(row['Exit Date']);
+        const exitDate = parseMaybeDate(row['Exit Date']);
         return exitDate && exitDate >= startDate && exitDate <= endDate;
       }).length;
 
       const headcountStart = data.filter(row => {
-        const joiningDate = parseDate(row['Joining Date']);
-        const exitDate = parseDate(row['Exit Date']);
-        return joiningDate && joiningDate <= startDate && 
+        const joiningDate = parseMaybeDate(row['Joining Date']);
+        const exitDate = parseMaybeDate(row['Exit Date']);
+        return joiningDate && joiningDate <= startDate &&
                (!exitDate || exitDate >= startDate);
       }).length;
 
       const headcountEnd = data.filter(row => {
-        const joiningDate = parseDate(row['Joining Date']);
-        const exitDate = parseDate(row['Exit Date']);
-        return joiningDate && joiningDate <= endDate && 
+        const joiningDate = parseMaybeDate(row['Joining Date']);
+        const exitDate = parseMaybeDate(row['Exit Date']);
+        return joiningDate && joiningDate <= endDate &&
                (!exitDate || exitDate > endDate);
       }).length;
 
@@ -245,32 +263,31 @@ const HRKPIDashboard = () => {
       const startDate = new Date('2025-07-01');
       const today = new Date();
 
-      const parseDate = (dateStr) => {
-        if (!dateStr) return null;
-        const date = new Date(dateStr);
-        return isNaN(date.getTime()) ? null : date;
-      };
-
       const validValues = data
         .filter(row => {
-          const erfDate = parseDate(row['ERF Received On']);
-          const joiningDate = parseDate(row['Joining Date']);
+          const erfDate = parseMaybeDate(row['ERF Received On']);
+          const joiningDate = parseMaybeDate(row['Joining Date']);
           const status = row['Status'];
-          
-          return erfDate && 
-                 erfDate >= startDate && 
-                 erfDate <= today &&
-                 joiningDate && 
-                 status === 'Hired';
+          // require valid erfDate, joiningDate, and hired status (and erf within range)
+          return erfDate && erfDate >= startDate && erfDate <= today && joiningDate && status === 'Hired';
         })
         .map(row => {
-          let ttf = parseFloat(row['Time To Fill']);
-          if (isNaN(ttf) || ttf < 0) {
-            ttf = 0;
+          // prefer explicit 'Time To Fill' column if present
+          let ttfRaw = row['Time To Fill'];
+          if (ttfRaw == null || ttfRaw === '') {
+            // fallback: compute difference in days between joining and erf
+            const erfDate = parseMaybeDate(row['ERF Received On']);
+            const joiningDate = parseMaybeDate(row['Joining Date']);
+            if (erfDate && joiningDate) {
+              return (joiningDate - erfDate) / (1000 * 60 * 60 * 24);
+            }
+            return null;
           }
+          const ttf = parseFloat(ttfRaw);
+          if (isNaN(ttf) || ttf < 0) return null; // exclude invalid/negative
           return ttf;
         })
-        .filter(val => !isNaN(val) && val >= 0);
+        .filter(val => val !== null && !isNaN(val));
 
       if (validValues.length === 0) return null;
 
@@ -288,7 +305,7 @@ const HRKPIDashboard = () => {
       const cultureColumn = 'How would you rate the company culture?';
 
       let promoters = 0, passives = 0, detractors = 0;
-      
+
       data.forEach(row => {
         const score = parseFloat(row[enpsColumn]);
         if (!isNaN(score)) {
@@ -302,6 +319,7 @@ const HRKPIDashboard = () => {
       if (totalResponses === 0) return null;
 
       const enps = ((promoters / totalResponses) - (detractors / totalResponses)) * 100;
+      // Keep the previous behavior but it's safe to compute without causing runtime errors
       const enpsPercentage = (enps + 100) / 2;
 
       const cultureScores = data
@@ -331,7 +349,7 @@ const HRKPIDashboard = () => {
       const calculateDiversity = (counts) => {
         const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
         if (total === 0) return 0;
-        
+
         const proportions = Object.values(counts).map(count => count / total);
         const sumOfSquares = proportions.reduce((sum, p) => sum + (p * p), 0);
         return 1 - sumOfSquares;
@@ -389,7 +407,7 @@ const HRKPIDashboard = () => {
       if (fileType === 'edmReport') {
         const turnoverRate = calculateTurnoverRate(jsonData);
         const diversityIndex = calculateDiversityIndex(jsonData);
-        
+
         if (turnoverRate !== null) newCalculations.turnoverRate = turnoverRate;
         if (diversityIndex !== null) newCalculations.diversityIndex = diversityIndex;
       } else if (fileType === 'recruitmentTracker') {
@@ -425,20 +443,17 @@ const HRKPIDashboard = () => {
     'Learning': BookOpen
   };
 
-  const filteredData = selectedPillar === 'all' 
-    ? kpiData 
+  const filteredData = selectedPillar === 'all'
+    ? kpiData
     : kpiData.filter(item => item.companyPillar === selectedPillar);
 
-  const pillarSummary = Object.keys(pillarColors).map(pillar => ({
-    name: pillar,
-    kpiCount: kpiData.filter(item => item.companyPillar === pillar).length,
-    avgTarget: Math.round(
-      kpiData
-        .filter(item => item.companyPillar === pillar)
-        .reduce((acc, item) => acc + Math.abs(item.targetValue), 0) / 
-      kpiData.filter(item => item.companyPillar === pillar).length
-    )
-  }));
+  const pillarSummary = Object.keys(pillarColors).map(pillar => {
+    const items = kpiData.filter(item => item.companyPillar === pillar);
+    const kpiCount = items.length;
+    const sumAbsTargets = items.reduce((acc, item) => acc + (Math.abs(item.targetValue) || 0), 0);
+    const avgTarget = kpiCount > 0 ? Math.round(sumAbsTargets / kpiCount) : 0;
+    return { name: pillar, kpiCount, avgTarget };
+  });
 
   const hrPillarData = [
     { name: 'P&C Organization', value: kpiData.filter(k => k.hrPillar === 'P&C Organization').length },
@@ -453,63 +468,72 @@ const HRKPIDashboard = () => {
     setShowModal(true);
   };
 
-  const KPICard = ({ kpi, index }) => (
-    <div
-      key={index}
-      onClick={() => handleKPIClick(kpi)}
-      className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1"
-      style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="text-3xl mb-2">{kpi.icon}</div>
-          <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
-          <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
-        </div>
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
-            kpi.status === 'Start Tracking'
-              ? 'bg-yellow-100 text-yellow-800'
-              : kpi.status === 'Planning'
-              ? 'bg-purple-100 text-purple-800'
-              : 'bg-blue-100 text-blue-800'
-          }`}
-        >
-          {kpi.status}
-        </span>
-      </div>
+  const KPICard = ({ kpi, index }) => {
+    // compute progress percent safely (guard against zero/undefined targets and null currentValue)
+    const safeCurrent = kpi.currentValue != null ? Number(kpi.currentValue) : null;
+    const safeTarget = kpi.targetValue != null ? Number(kpi.targetValue) : null;
+    const progressPct = safeTarget && safeTarget !== 0 && safeCurrent !== null
+      ? Math.min((Math.abs(safeCurrent) / Math.abs(safeTarget)) * 100, 100)
+      : 0;
 
-      <div className="space-y-3">
-        <div className="bg-slate-50 rounded-lg p-3">
-          <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
-          <p className="text-sm text-slate-600">{kpi.target}</p>
-        </div>
-
-        <div className="pt-2">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-600">Current Progress:</span>
-            <span className="font-bold text-slate-800">{kpi.currentValue}%</span>
+    return (
+      <div
+        key={index}
+        onClick={() => handleKPIClick(kpi)}
+        className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1"
+        style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <div className="text-3xl mb-2">{kpi.icon}</div>
+            <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
+            <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-2">
-            <div
-              className="h-2 rounded-full transition-all"
-              style={{
-                width: `${Math.min((Math.abs(kpi.currentValue) / Math.abs(kpi.targetValue)) * 100, 100)}%`,
-                backgroundColor: pillarColors[kpi.companyPillar]
-              }}
-            />
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              kpi.status === 'Start Tracking'
+                ? 'bg-yellow-100 text-yellow-800'
+                : kpi.status === 'Planning'
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-blue-100 text-blue-800'
+            }`}
+          >
+            {kpi.status}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          <div className="bg-slate-50 rounded-lg p-3">
+            <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
+            <p className="text-sm text-slate-600">{kpi.target}</p>
+          </div>
+
+          <div className="pt-2">
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-slate-600">Current Progress:</span>
+              <span className="font-bold text-slate-800">{safeCurrent !== null ? `${safeCurrent}%` : 'N/A'}</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-2">
+              <div
+                className="h-2 rounded-full transition-all"
+                style={{
+                  width: `${progressPct}%`,
+                  backgroundColor: pillarColors[kpi.companyPillar]
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {kpi.calculable && (
-        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-green-600 font-medium">
-          <RefreshCw className="w-3 h-3" />
-          Auto-calculated from data
-        </div>
-      )}
-    </div>
-  );
+        {kpi.calculable && (
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-green-600 font-medium">
+            <RefreshCw className="w-3 h-3" />
+            Auto-calculated from data
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const FileUploadSection = ({ fileType, label, description }) => {
     const status = uploadStatus[fileType];
@@ -526,7 +550,7 @@ const HRKPIDashboard = () => {
             <CheckCircle className="w-6 h-6 text-green-500" />
           )}
         </div>
-        
+
         <input
           type="file"
           accept=".xlsx,.xls"
@@ -534,7 +558,7 @@ const HRKPIDashboard = () => {
           className="hidden"
           id={`upload-${fileType}`}
         />
-        
+
         <label
           htmlFor={`upload-${fileType}`}
           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium cursor-pointer transition-all ${
@@ -679,7 +703,7 @@ const HRKPIDashboard = () => {
               return (
                 <div key={pillar} className="mb-8">
                   <div className="flex items-center gap-3 mb-4">
-                    <div 
+                    <div
                       className="p-3 rounded-lg"
                       style={{ backgroundColor: pillarColors[pillar] + '20' }}
                     >
@@ -699,11 +723,11 @@ const HRKPIDashboard = () => {
           ) : (
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-4">
-                <div 
+                <div
                   className="p-3 rounded-lg"
                   style={{ backgroundColor: pillarColors[selectedPillar] + '20' }}
                 >
-                  {React.createElement(pillarIcons[selectedPillar], { 
+                  {React.createElement(pillarIcons[selectedPillar], {
                     className: "w-6 h-6",
                     style: { color: pillarColors[selectedPillar] }
                   })}
@@ -777,13 +801,13 @@ const HRKPIDashboard = () => {
                   label="EDM Report"
                   description="Employee Data Management report containing joining dates, exit dates, demographics"
                 />
-                
+
                 <FileUploadSection
                   fileType="recruitmentTracker"
                   label="Recruitment Tracker"
                   description="Recruitment data with ERF dates, joining dates, and time to fill metrics"
                 />
-                
+
                 <FileUploadSection
                   fileType="enpsSurvey"
                   label="eNPS & cNPS Survey"
@@ -828,13 +852,18 @@ const HRKPIDashboard = () => {
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Current Value</span>
-                    <span className="text-4xl font-bold text-slate-800">{selectedKPI.currentValue}%</span>
+                    <span className="text-4xl font-bold text-slate-800">
+                      {selectedKPI.currentValue != null ? `${selectedKPI.currentValue}%` : 'N/A'}
+                    </span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-3 mt-3">
                     <div
                       className="h-3 rounded-full transition-all"
                       style={{
-                        width: `${Math.min((Math.abs(selectedKPI.currentValue) / Math.abs(selectedKPI.targetValue)) * 100, 100)}%`,
+                        width: `${(selectedKPI.targetValue && selectedKPI.currentValue != null)
+                          ? Math.min((Math.abs(selectedKPI.currentValue) / Math.abs(selectedKPI.targetValue)) * 100, 100)
+                          : 0
+                        }%`,
                         backgroundColor: pillarColors[selectedKPI.companyPillar]
                       }}
                     />
