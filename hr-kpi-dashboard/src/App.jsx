@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx/xlsx.mjs";
 import { Users, BookOpen, Briefcase, X, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const HRKPIDashboard = () => {
