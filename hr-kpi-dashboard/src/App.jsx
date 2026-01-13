@@ -277,6 +277,57 @@ const parseExcelFile = async (file) => {
     }
   };
 
+  // Add this temporary debugging function to your component:
+
+  const debugTimeToFill = (data) => {
+    console.log('=== TIME TO FILL DEBUG ===');
+    const startDate = new Date('2025-07-01');
+    const today = new Date();
+    
+    console.log('Date range:', startDate, 'to', today);
+    console.log('Total rows:', data.length);
+    
+    const filtered = data.filter(row => {
+      const erfDate = parseMaybeDate(row['ERF Received On']);
+      const joiningDate = parseMaybeDate(row['Joining Date']);
+      const status = row['Status'];
+      const timeToFill = row['Time To Fill'];
+      
+      const isValid = erfDate && 
+             erfDate >= startDate && 
+             erfDate <= today && 
+             joiningDate && 
+             status === 'Hired' &&
+             timeToFill != null &&
+             timeToFill !== '';
+      
+      if (isValid) {
+        console.log('Valid row:', {
+          erfDate: erfDate?.toISOString?.(),
+          joiningDate: joiningDate?.toISOString?.(),
+          status,
+          timeToFill: parseFloat(timeToFill)
+        });
+      }
+      
+      return isValid;
+    });
+    
+    console.log('Filtered rows count:', filtered.length);
+    
+    const values = filtered.map(row => {
+      let ttf = parseFloat(row['Time To Fill']);
+      if (isNaN(ttf) || ttf < 0) ttf = 0;
+      return ttf;
+    });
+    
+    console.log('All TTF values:', values);
+    console.log('Sum:', values.reduce((a,b) => a+b, 0));
+    console.log('Average:', values.reduce((a,b) => a+b, 0) / values.length);
+    
+    return values;
+  };
+  
   const calculateTimeToFill = (data) => {
     const startDate = new Date('2025-07-01');
     const today = new Date();
@@ -441,6 +492,14 @@ const handleFileUpload = async (fileType, file) => {
       console.log('Time to fill:', timeToFill);
       
       if (timeToFill !== null) newCalculations.timeToFill = timeToFill;
+      } else if (fileType === 'recruitmentTracker') {
+      console.log('Calculating time to fill...');
+      debugTimeToFill(jsonData); // ADD THIS LINE
+      const timeToFill = calculateTimeToFill(jsonData);
+      console.log('Time to fill:', timeToFill);
+  
+      if (timeToFill !== null) newCalculations.timeToFill = timeToFill;
+    }
     } else if (fileType === 'enpsSurvey') {
       console.log('Calculating engagement score...');
       const engagementScore = calculateEngagementScore(jsonData);
