@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import * as XLSX from "xlsx/xlsx.mjs";
+import React, { useState } from "react";
+
+const handleFileUpload = async (file) => {
+  const XLSX = await import("xlsx");
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data);
+  console.log(workbook);
+};
+
 import { Users, BookOpen, Briefcase, X, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const HRKPIDashboard = () => {
