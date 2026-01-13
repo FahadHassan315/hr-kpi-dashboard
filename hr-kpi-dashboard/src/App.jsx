@@ -277,46 +277,48 @@ const parseExcelFile = async (file) => {
     }
   };
 
-  const calculateTimeToFill = (data) => {
-    try {
-      const startDate = new Date('2025-07-01');
-      const today = new Date();
+const calculateTimeToFill = (data) => {
+  try {
+    const startDate = new Date('2025-07-01');
+    const today = new Date();
 
-      const validValues = data
-        .filter(row => {
-          const erfDate = parseMaybeDate(row['ERF Received On']);
-          const joiningDate = parseMaybeDate(row['Joining Date']);
-          const status = row['Status'];
-          // require valid erfDate, joiningDate, and hired status (and erf within range)
-          return erfDate && erfDate >= startDate && erfDate <= today && joiningDate && status === 'Hired';
-        })
-        .map(row => {
-          // prefer explicit 'Time To Fill' column if present
-          let ttfRaw = row['Time To Fill'];
-          if (ttfRaw == null || ttfRaw === '') {
-            // fallback: compute difference in days between joining and erf
-            const erfDate = parseMaybeDate(row['ERF Received On']);
-            const joiningDate = parseMaybeDate(row['Joining Date']);
-            if (erfDate && joiningDate) {
-              return (joiningDate - erfDate) / (1000 * 60 * 60 * 24);
-            }
-            return null;
-          }
-          const ttf = parseFloat(ttfRaw);
-          if (isNaN(ttf) || ttf < 0) return null; // exclude invalid/negative
-          return ttf;
-        })
-        .filter(val => val !== null && !isNaN(val));
+    const validValues = data
+      .filter(row => {
+        const erfDate = parseMaybeDate(row['ERF Received On']);
+        const joiningDate = parseMaybeDate(row['Joining Date']);
+        const status = row['Status'];
+        const timeToFill = row['Time To Fill'];
+        
+        // Must have ERF date within range, joining date, status=Hired, and valid TTF
+        return erfDate && 
+               erfDate >= startDate && 
+               erfDate <= today && 
+               joiningDate && 
+               status === 'Hired' &&
+               timeToFill != null &&
+               timeToFill !== '';
+      })
+      .map(row => {
+        let ttf = parseFloat(row['Time To Fill']);
+        
+        // If TTF is negative or invalid, set to 0 (matching Excel logic)
+        if (isNaN(ttf) || ttf < 0) {
+          ttf = 0;
+        }
+        
+        return ttf;
+      })
+      .filter(val => val >= 0); // Only include values >= 0
 
-      if (validValues.length === 0) return null;
+    if (validValues.length === 0) return null;
 
-      const average = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
-      return parseFloat(average.toFixed(1));
-    } catch (error) {
-      console.error('Error calculating time to fill:', error);
-      return null;
-    }
-  };
+    const average = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+    return parseFloat(average.toFixed(1));
+  } catch (error) {
+    console.error('Error calculating time to fill:', error);
+    return null;
+  }
+};
 
   const calculateEngagementScore = (data) => {
     try {
