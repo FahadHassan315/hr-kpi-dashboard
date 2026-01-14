@@ -988,16 +988,9 @@ const handleFileUpload = async (fileType, file) => {
             <h2 className="text-xl font-bold text-slate-800 mb-4">Total Employees by Company</h2>
             {edmChartData.company.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={edmChartData.company} margin={{ bottom: 100, left: 0, right: 0, top: 0 }}>
+                <BarChart data={edmChartData.company}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="name" 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={120}
-                    interval={0}
-                    tick={{ fontSize: 12 }}
-                  />
+                  <XAxis dataKey="name" angle={-15} textAnchor="end" height={80} />
                   <YAxis />
                   <Tooltip />
                   <Bar dataKey="value" fill="#3498DB" name="Employee Count" />
