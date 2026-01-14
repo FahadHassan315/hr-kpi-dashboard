@@ -853,10 +853,10 @@ const handleFileUpload = async (fileType, file) => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-slate-800 mb-2">
-                HR Strategic KPI Dashboard 2025
+                HR Strategic KPI Dashboard
               </h1>
               <p className="text-slate-600">
-                Track and monitor your strategic HR objectives aligned with company goals
+                Track and monitor strategic HR objectives aligned with company goals
               </p>
             </div>
             <button
