@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, BookOpen, Briefcase, X, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const HRKPIDashboard = () => {
+  const [edmChartData, setEdmChartData] = useState({ company: [], type: [] });
   const [selectedPillar, setSelectedPillar] = useState('all');
   const [selectedKPI, setSelectedKPI] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -17,6 +19,26 @@ const HRKPIDashboard = () => {
     linkedinLearnerDetail: null,
     linkedinLearning: null
   });
+
+  useEffect(() => {
+    const loadSampleEDMData = async () => {
+      try {
+        // Try to load sample EDM data from your GitHub repo
+        // Replace YOUR_USERNAME and YOUR_REPO with actual values
+        const response = await fetch('https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/sample_edm.json');
+        if (response.ok) {
+          const data = await response.json();
+          const chartData = calculateEDMCharts(data);
+          setEdmChartData(chartData);
+          console.log('Sample EDM data loaded successfully');
+        }
+      } catch (error) {
+        console.log('Sample data not available - users must upload EDM file');
+      }
+    };
+    
+    loadSampleEDMData();
+  }, []);
 
   // Utility: convert Excel serial date to JS Date (handles numbers produced by some XLSX exports)
   const excelSerialToDate = (serial) => {
@@ -590,6 +612,48 @@ const parseExcelFile = async (file) => {
     }
   };
 
+  const calculateEDMCharts = (data) => {
+    try {
+      // Chart 1: Employees by Company
+      const companyCounts = {};
+      data.forEach(row => {
+        const company = row['Company'];
+        if (company && company.trim() !== '') {
+          companyCounts[company.trim()] = (companyCounts[company.trim()] || 0) + 1;
+        }
+      });
+  
+      const companyData = Object.entries(companyCounts)
+        .map(([name, count]) => ({ name, value: count }))
+        .sort((a, b) => b.value - a.value);
+  
+      // Chart 2: Employees by Type (Contract, Probationary, Permanent)
+      const typeCounts = { Contract: 0, Probationary: 0, Permanent: 0 };
+      data.forEach(row => {
+        const type = row['Type'];
+        if (type && type.trim() !== '') {
+          const cleanType = type.trim();
+          if (cleanType.toLowerCase() === 'contract') {
+            typeCounts.Contract++;
+          } else if (cleanType.toLowerCase() === 'probationary') {
+            typeCounts.Probationary++;
+          } else {
+            typeCounts.Permanent++;
+          }
+        }
+      });
+  
+      const typeData = Object.entries(typeCounts)
+        .filter(([_, count]) => count > 0)
+        .map(([name, value]) => ({ name, value }));
+  
+      return { company: companyData, type: typeData };
+    } catch (error) {
+      console.error('Error calculating EDM charts:', error);
+      return { company: [], type: [] };
+    }
+  };  
+  
 const handleFileUpload = async (fileType, file) => {
   if (!file) {
     console.log('No file provided');
@@ -616,6 +680,9 @@ const handleFileUpload = async (fileType, file) => {
       const turnoverRate = calculateTurnoverRate(jsonData);
       const diversityIndex = calculateDiversityIndex(jsonData);
       const totalActiveEmployees = getTotalActiveEmployees(jsonData);
+      const chartData = calculateEDMCharts(jsonData);
+
+      setEdmChartData(chartData);
       console.log('Turnover:', turnoverRate, 'Diversity:', diversityIndex, 'Active Employees:', totalActiveEmployees);
     
       if (turnoverRate !== null) newCalculations.turnoverRate = turnoverRate;
@@ -903,45 +970,58 @@ const handleFileUpload = async (fileType, file) => {
           </div>
         </div>
 
-        {/* Summary Charts */}
+        {/* Summary Charts from EDM Report */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* Chart 1: Employees by Company */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by Strategic Pillar</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={pillarSummary}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-15} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="kpiCount" fill="#3498DB" name="Number of KPIs" />
-              </BarChart>
-            </ResponsiveContainer>
+            <h2 className="text-xl font-bold text-slate-800 mb-4">Total Employees by Company</h2>
+            {edmChartData.company.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={edmChartData.company}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-15} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#3498DB" name="Employee Count" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-slate-500">
+                Upload EDM Report to view employee distribution by company
+              </div>
+            )}
           </div>
-
+        
+          {/* Chart 2: Employees by Type */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">KPIs by HR Strategic Pillar</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={hrPillarData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {hrPillarData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <h2 className="text-xl font-bold text-slate-800 mb-4">Employee Distribution by Type</h2>
+            {edmChartData.type.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={edmChartData.type}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {edmChartData.type.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-slate-500">
+                Upload EDM Report to view employee distribution by type
+              </div>
+            )}
           </div>
         </div>
-
         {/* KPI Cards */}
         <div>
           {selectedPillar === 'all' ? (
@@ -992,6 +1072,87 @@ const handleFileUpload = async (fileType, file) => {
           )}
         </div>
 
+        {/* 2027 Goals & Objectives - ADD THIS ENTIRE BLOCK */}
+        <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 rounded-xl shadow-lg p-8 mt-8 text-white">
+          <h2 className="text-3xl font-bold mb-2">2027 Strategic Objectives & Goals</h2>
+          <p className="text-slate-300 mb-6">Long-term HR initiatives aligned with organizational vision</p>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Talent Acquisition Goals */}
+            <div className="bg-white bg-opacity-10 rounded-lg p-5 border border-blue-400 border-opacity-30">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-5 h-5 text-blue-300" />
+                <h3 className="font-bold text-lg">Talent Acquisition</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-slate-100">
+                <li className="flex gap-2">
+                  <span className="text-blue-300 font-bold">→</span>
+                  <span>20% of hires meeting or exceeding performance expectations within the first year</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-300 font-bold">→</span>
+                  <span>Reduce turnover rate by 5%</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-300 font-bold">→</span>
+                  <span>Reduce average time to fill critical positions by 5%</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-300 font-bold">→</span>
+                  <span>Ensure an average of 10% workplace diversity (age, gender, minority groups)</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Talent Management Goals */}
+            <div className="bg-white bg-opacity-10 rounded-lg p-5 border border-purple-400 border-opacity-30">
+              <div className="flex items-center gap-2 mb-3">
+                <Briefcase className="w-5 h-5 text-purple-300" />
+                <h3 className="font-bold text-lg">Talent Management</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-slate-100">
+                <li className="flex gap-2">
+                  <span className="text-purple-300 font-bold">→</span>
+                  <span>Increase Employee Development Index by 5% (from baseline)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-purple-300 font-bold">→</span>
+                  <span>Implement AI in 25% of P&C processes, enhancing decision making and efficiency</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-purple-300 font-bold">→</span>
+                  <span>Achieve an employee engagement score of at least 20%</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Learning & Development Goals */}
+            <div className="bg-white bg-opacity-10 rounded-lg p-5 border border-orange-400 border-opacity-30">
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen className="w-5 h-5 text-orange-300" />
+                <h3 className="font-bold text-lg">Learning & Development</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-slate-100">
+                <li className="flex gap-2">
+                  <span className="text-orange-300 font-bold">→</span>
+                  <span>35% of permanent employees trained and proficient in AI-driven tools and processes</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-orange-300 font-bold">→</span>
+                  <span>60% completion rate of skill development based on Training Needs Analysis</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-500 bg-opacity-20 rounded-lg border border-blue-400 border-opacity-50">
+            <p className="text-sm text-slate-200">
+              <span className="font-bold">Timeline:</span> These strategic objectives are planned for achievement by 2027, with quarterly reviews and monthly tracking to ensure progress alignment.
+            </p>
+          </div>
+        </div>
+        {/* END OF 2027 Goals Section */}
+        
         {/* Implementation Guide */}
         <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Implementation Roadmap</h2>
