@@ -211,7 +211,7 @@ const parseExcelFile = async (file) => {
       hrPillar: 'Talent & Skills',
       kpi: 'AI Training',
       target: '35% of permanent employees trained in AI tools',
-      currentValue: calculatedKPIs.aiTraining !== undefined ? calculatedKPIs.aiTraining : 75,
+      currentValue: currentValue: calculatedKPIs.aiTraining?.percentage !== undefined ? calculatedKPIs.aiTraining.percentage : 75,
       targetValue: 35,
       status: 'In Progress',
       icon: '🎓',
@@ -222,7 +222,7 @@ const parseExcelFile = async (file) => {
         description: 'Tracks the percentage of employees who have completed AI tools training programs with 80% or higher completion rate.',
         dataSource: 'LinkedIn Learner Detail Report',
         formula: 'AI Training (%) = (Employees with ≥80% completion in AI/Artificial Intelligence courses / Total LinkedIn Learning License Holders) × 100',
-        additionalInfo: calculatedKPIs.aiTraining 
+        additionalInfo: calculatedKPIs.aiTraining && typeof calculatedKPIs.aiTraining === 'object'
       ? `${calculatedKPIs.aiTraining.totalLearners} employees have LinkedIn Learning licenses. ${calculatedKPIs.aiTraining.aiTrained} employees (${calculatedKPIs.aiTraining.percentage}%) have completed AI training. ${calculatedKPIs.totalActiveEmployees || 'N/A'} total active employees in the organization.`
       : 'Upload LinkedIn Learner Detail Report to see detailed statistics.'
       }
