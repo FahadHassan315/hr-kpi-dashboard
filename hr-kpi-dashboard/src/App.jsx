@@ -613,9 +613,18 @@ const parseExcelFile = async (file) => {
 
   const calculateEDMCharts = (data) => {
     try {
-      // Chart 1: Employees by Company
+      // Filter only ACTIVE employees first
+      const activeEmployees = data.filter(row => {
+        const status = row['Status'];
+        return status && status.trim().toLowerCase() === 'active';
+      });
+  
+      console.log('Total records in EDM:', data.length);
+      console.log('Active employees only:', activeEmployees.length);
+  
+      // Chart 1: Employees by Company (ONLY ACTIVE)
       const companyCounts = {};
-      data.forEach(row => {
+      activeEmployees.forEach(row => {
         const company = row['Company'];
         if (company && company.trim() !== '') {
           companyCounts[company.trim()] = (companyCounts[company.trim()] || 0) + 1;
@@ -626,15 +635,15 @@ const parseExcelFile = async (file) => {
         .map(([name, count]) => ({ name, value: count }))
         .sort((a, b) => b.value - a.value);
   
-      // Chart 2: Employees by Type (Contract, Probationary, Permanent)
+      // Chart 2: Employees by Type (ONLY ACTIVE - Contract, Probationary, Permanent)
       const typeCounts = { Contract: 0, Probationary: 0, Permanent: 0 };
-      data.forEach(row => {
+      activeEmployees.forEach(row => {
         const type = row['Type'];
         if (type && type.trim() !== '') {
-          const cleanType = type.trim();
-          if (cleanType.toLowerCase() === 'contract') {
+          const cleanType = type.trim().toLowerCase();
+          if (cleanType === 'contract') {
             typeCounts.Contract++;
-          } else if (cleanType.toLowerCase() === 'probationary') {
+          } else if (cleanType === 'probationary') {
             typeCounts.Probationary++;
           } else {
             typeCounts.Permanent++;
@@ -646,12 +655,15 @@ const parseExcelFile = async (file) => {
         .filter(([_, count]) => count > 0)
         .map(([name, value]) => ({ name, value }));
   
+      console.log('Company distribution:', companyData);
+      console.log('Type distribution:', typeData);
+  
       return { company: companyData, type: typeData };
     } catch (error) {
       console.error('Error calculating EDM charts:', error);
       return { company: [], type: [] };
     }
-  };  
+  };
   
 const handleFileUpload = async (fileType, file) => {
   if (!file) {
