@@ -632,7 +632,10 @@ const parseExcelFile = async (file) => {
       });
   
       const companyData = Object.entries(companyCounts)
-        .map(([name, count]) => ({ name, value: count }))
+        .map(([name, count]) => ({  
+          name: getCompanyShortName(name), 
+          value: count 
+        }))
         .sort((a, b) => b.value - a.value);
   
       // Chart 2: Employees by Type (ONLY ACTIVE - Contract, Probationary, Permanent)
@@ -663,6 +666,18 @@ const parseExcelFile = async (file) => {
       console.error('Error calculating EDM charts:', error);
       return { company: [], type: [] };
     }
+  };
+
+  const getCompanyShortName = (companyName) => {
+    const shortNameMap = {
+      'Jaffer Business Systems (Private) Limited': 'JBSPL',
+      'Energy and Automation Pakistan (Private) Limited': 'ENA',
+      'Jaffer Business Systems Inc.': 'JBSInc',
+      'Impare Tech (Private) Limited': 'Impare',
+      'Hysab Kytab (Private) Limited': 'HK'
+    };
+    
+    return shortNameMap[companyName] || companyName;
   };
   
 const handleFileUpload = async (fileType, file) => {
