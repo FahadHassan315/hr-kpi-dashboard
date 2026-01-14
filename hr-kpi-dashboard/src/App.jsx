@@ -221,8 +221,10 @@ const parseExcelFile = async (file) => {
       details: {
         description: 'Tracks the percentage of employees who have completed AI tools training programs with 80% or higher completion rate.',
         dataSource: 'LinkedIn Learner Detail Report',
-        formula: 'AI Training (%) = (Distinct Emails with ≥80% completion in AI/Artificial Intelligence courses / Total Employees from EDM) × 100',
-        additionalInfo: 'Employees are considered AI-trained if they have completed at least 80% of any course with "AI" or "Artificial Intelligence" in the skills column.'
+        formula: 'AI Training (%) = (Employees with ≥80% completion in AI/Artificial Intelligence courses / Total LinkedIn Learning License Holders) × 100',
+        additionalInfo: calculatedKPIs.aiTraining 
+      ? `${calculatedKPIs.aiTraining.totalLearners} employees have LinkedIn Learning licenses. ${calculatedKPIs.aiTraining.aiTrained} employees (${calculatedKPIs.aiTraining.percentage}%) have completed AI training. ${calculatedKPIs.totalActiveEmployees || 'N/A'} total active employees in the organization.`
+      : 'Upload LinkedIn Learner Detail Report to see detailed statistics.'
       }
     },
     {
@@ -247,10 +249,19 @@ const parseExcelFile = async (file) => {
   ];
 
   const kpiData = getKPIData();
-  const calculateAITraining = (learnerData, edmData) => {
+  const calculateAITraining = (learnerData) => {
     try {
-      const totalEmployees = edmData.length;
-      if (totalEmployees === 0) return null;
+      // Get total unique employees with LinkedIn Learning license
+      const allLearners = new Set();
+      learnerData.forEach(row => {
+        const email = row['Email'];
+        if (email) {
+          allLearners.add(email.trim().toLowerCase());
+        }
+      });
+  
+      const totalLearners = allLearners.size;
+      if (totalLearners === 0) return null;
   
       const aiTrainedEmails = new Set();
   
@@ -282,14 +293,36 @@ const parseExcelFile = async (file) => {
         }
       });
   
-      const aiTrainingRate = (aiTrainedEmails.size / totalEmployees) * 100;
-      return parseFloat(aiTrainingRate.toFixed(1));
+      const aiTrainingRate = (aiTrainedEmails.size / totalLearners) * 100;
+      return {
+        percentage: parseFloat(aiTrainingRate.toFixed(1)),
+        totalLearners: totalLearners,
+        aiTrained: aiTrainedEmails.size
+      };
     } catch (error) {
       console.error('Error calculating AI training:', error);
       return null;
     }
+  };  
+
+  const getTotalActiveEmployees = (edmData) => {
+    try {
+      const activeEmployees = new Set();
+      edmData.forEach(row => {
+        const employeeId = row['Employee ID'];
+        const status = row['Status'];
+        
+        if (employeeId && status === 'Active') {
+          activeEmployees.add(employeeId);
+        }
+      });
+      
+      return activeEmployees.size;
+    } catch (error) {
+      console.error('Error getting total active employees:', error);
+      return 0;
+    }
   };
-  
   const calculateTalentDevelopment = (learningData) => {
     try {
       const uniqueEmails = new Set();
@@ -506,7 +539,8 @@ const parseExcelFile = async (file) => {
 
   const calculateDiversityIndex = (data) => {
     try {
-      const totalEmployees = data.length;
+      const activeEmployees = data.filter(row => row['Status'] === 'Active');
+      const totalEmployees = activeEmployees.length;
       if (totalEmployees === 0) return null;
 
       const calculateDiversity = (counts) => {
@@ -519,7 +553,7 @@ const parseExcelFile = async (file) => {
       };
 
       const genderCounts = {};
-      data.forEach(row => {
+      activeEmployees.forEach(row => {
         const gender = row['Gender'];
         if (gender) {
           genderCounts[gender] = (genderCounts[gender] || 0) + 1;
@@ -528,7 +562,7 @@ const parseExcelFile = async (file) => {
       const genderDiversity = calculateDiversity(genderCounts);
 
       const ageCounts = { 'under30': 0, '30to50': 0, 'over50': 0 };
-      data.forEach(row => {
+      activeEmployees.forEach(row => {
         const age = parseFloat(row["Employee's Age"]);
         if (!isNaN(age)) {
           if (age < 30) ageCounts.under30++;
@@ -539,7 +573,7 @@ const parseExcelFile = async (file) => {
       const ageDiversity = calculateDiversity(ageCounts);
 
       const religionCounts = {};
-      data.forEach(row => {
+      activeEmployees.forEach(row => {
         const religion = row['Religion'];
         if (religion) {
           religionCounts[religion] = (religionCounts[religion] || 0) + 1;
@@ -581,15 +615,19 @@ const handleFileUpload = async (fileType, file) => {
       console.log('Calculating turnover and diversity...');
       const turnoverRate = calculateTurnoverRate(jsonData);
       const diversityIndex = calculateDiversityIndex(jsonData);
-      console.log('Turnover:', turnoverRate, 'Diversity:', diversityIndex);
-
+      const totalActiveEmployees = getTotalActiveEmployees(jsonData);
+      console.log('Turnover:', turnoverRate, 'Diversity:', diversityIndex, 'Active Employees:', totalActiveEmployees);
+    
       if (turnoverRate !== null) newCalculations.turnoverRate = turnoverRate;
       if (diversityIndex !== null) newCalculations.diversityIndex = diversityIndex;
-
-      // Recalculate AI Training if LinkedIn Learner Detail is already uploaded
-      if (uploadedFiles.linkedinLearnerDetail) {
-        const aiTraining = calculateAITraining(uploadedFiles.linkedinLearnerDetail, jsonData);
-        if (aiTraining !== null) newCalculations.aiTraining = aiTraining;
+      newCalculations.totalActiveEmployees = totalActiveEmployees;
+    
+      // Update AI Training stats if LinkedIn Learner Detail is already uploaded
+      if (uploadedFiles.linkedinLearnerDetail && calculatedKPIs.aiTraining) {
+        newCalculations.aiTraining = {
+          ...calculatedKPIs.aiTraining,
+          totalActiveEmployees: totalActiveEmployees
+        };
       }
     } else if (fileType === 'recruitmentTracker') {
       console.log('Calculating time to fill...');
@@ -605,13 +643,18 @@ const handleFileUpload = async (fileType, file) => {
       if (engagementScore !== null) newCalculations.engagementScore = engagementScore;
     } else if (fileType === 'linkedinLearnerDetail') {
       console.log('Calculating AI training...');
-      if (uploadedFiles.edmReport) {
-        const aiTraining = calculateAITraining(jsonData, uploadedFiles.edmReport);
-        console.log('AI training:', aiTraining);
-        if (aiTraining !== null) newCalculations.aiTraining = aiTraining;
-      } else {
-        console.log('EDM Report needed for total employee count');
+      const aiTraining = calculateAITraining(jsonData);
+      console.log('AI training:', aiTraining);
+      
+      if (aiTraining !== null) {
+        newCalculations.aiTraining = aiTraining;
+        
+        // If EDM is already uploaded, add total active employees
+        if (uploadedFiles.edmReport) {
+          newCalculations.totalActiveEmployees = getTotalActiveEmployees(uploadedFiles.edmReport);
+        }
       }
+    }
     } else if (fileType === 'linkedinLearning') {
       console.log('Calculating talent development...');
       const talentDevelopment = calculateTalentDevelopment(jsonData);
@@ -1039,7 +1082,7 @@ const handleFileUpload = async (fileType, file) => {
                     <li>• <strong>Time to Fill</strong> - Calculated from Recruitment Tracker</li>
                     <li>• <strong>Employee Engagement Score</strong> - Calculated from eNPS Survey</li>
                     <li>• <strong>Diversity Index</strong> - Calculated from EDM Report</li>
-                    <li>• <strong>AI Training</strong> - Calculated from LinkedIn Learner Detail + EDM Report</li>
+                    <li>• <strong>AI Training</strong> - Calculated from LinkedIn Learner Detail</li>
                     <li>• <strong>Talent Development</strong> - Calculated from LinkedIn Learning Report</li>
                   </ul>
                 </div>
