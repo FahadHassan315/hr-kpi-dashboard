@@ -211,7 +211,7 @@ const parseExcelFile = async (file) => {
       hrPillar: 'Talent & Skills',
       kpi: 'AI Training',
       target: '35% of permanent employees trained in AI tools',
-      currentValue: currentValue: calculatedKPIs.aiTraining?.percentage !== undefined ? calculatedKPIs.aiTraining.percentage : 75,
+      currentValue: calculatedKPIs.aiTraining?.percentage !== undefined ? calculatedKPIs.aiTraining.percentage : 75,
       targetValue: 35,
       status: 'In Progress',
       icon: '🎓',
