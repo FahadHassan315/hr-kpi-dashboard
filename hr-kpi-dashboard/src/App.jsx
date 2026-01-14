@@ -654,7 +654,6 @@ const handleFileUpload = async (fileType, file) => {
           newCalculations.totalActiveEmployees = getTotalActiveEmployees(uploadedFiles.edmReport);
         }
       }
-    }
     } else if (fileType === 'linkedinLearning') {
       console.log('Calculating talent development...');
       const talentDevelopment = calculateTalentDevelopment(jsonData);
