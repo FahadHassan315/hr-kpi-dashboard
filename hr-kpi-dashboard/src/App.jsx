@@ -69,7 +69,7 @@ const HRKPIDashboard = () => {
   };
 
   // Parse Excel file using local xlsx package
-const parseExcelFile = async (file) => {
+const parseExcelFile = async (file, sheetName = null) => {
   return new Promise((resolve, reject) => {
     console.log('Starting to parse file:', file.name, file.type, file.size);
     
@@ -84,8 +84,14 @@ const parseExcelFile = async (file) => {
         const workbook = XLSX.read(data, { type: 'array' });
         console.log('Workbook parsed, sheets:', workbook.SheetNames);
         
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        // Use specified sheet name or default to first sheet
+        const targetSheet = sheetName && workbook.SheetNames.includes(sheetName) 
+          ? sheetName 
+          : workbook.SheetNames[0];
+        
+        console.log('Reading from sheet:', targetSheet);
+        
+        const worksheet = workbook.Sheets[targetSheet];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
           defval: null, 
           raw: false, 
@@ -822,8 +828,16 @@ const handleFileUpload = async (fileType, file) => {
   setUploadStatus(prev => ({ ...prev, [fileType]: 'processing' }));
 
   try {
-    const jsonData = await parseExcelFile(file);
-    console.log('Parse successful, calculating KPIs...');
+    let sheetName = null;
+    if (fileType === 'linkedinFollowers') {
+      sheetName = 'New followers';
+    } else if (fileType === 'linkedinVisitors') {
+      sheetName = 'Visitor metrics';
+    } else if (fileType === 'linkedinContent') {
+      sheetName = 'Metrics';
+    }
+
+const jsonData = await parseExcelFile(file, sheetName);
     
     setUploadedFiles(prev => ({ ...prev, [fileType]: jsonData }));
 
