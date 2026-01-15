@@ -977,13 +977,101 @@ const jsonData = await parseExcelFile(file, sheetName);
   };
 
   const KPICard = ({ kpi, index }) => {
-    // compute progress percent safely (guard against zero/undefined targets and null currentValue)
+    // Special handling for LinkedIn Page Engagement KPI
+    const isLinkedInKPI = kpi.kpi === 'LinkedIn Page Engagement';
+    
+    if (isLinkedInKPI) {
+      const followers = calculatedKPIs.linkedinEngagement?.followers || 0;
+      const pageViews = calculatedKPIs.linkedinEngagement?.pageViews || 0;
+      const impressions = calculatedKPIs.linkedinEngagement?.impressions || 0;
+      
+      return (
+        <div
+          key={index}
+          onClick={() => handleKPIClick(kpi)}
+          className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1"
+          style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <div className="text-3xl mb-2">{kpi.icon}</div>
+              <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
+              <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {kpi.status}
+            </span>
+          </div>
+  
+          <div className="space-y-3">
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
+              <p className="text-sm text-slate-600">{kpi.target}</p>
+            </div>
+  
+            {/* Followers Progress Bar */}
+            <div className="pt-2">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-600">👥 Total Followers:</span>
+                <span className="font-bold text-slate-800">{followers.toLocaleString()}</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all bg-blue-500"
+                  style={{ width: `${Math.min((followers / 2554) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Target: 20% growth</p>
+            </div>
+  
+            {/* Page Views Progress Bar */}
+            <div className="pt-2">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-600">👁️ Total Page Views:</span>
+                <span className="font-bold text-slate-800">{pageViews.toLocaleString()}</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all bg-purple-500"
+                  style={{ width: `${Math.min((pageViews / 5000) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Target: 5,000 views</p>
+            </div>
+  
+            {/* Impressions Progress Bar */}
+            <div className="pt-2">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-600">📊 Total Impressions:</span>
+                <span className="font-bold text-slate-800">{impressions.toLocaleString()}</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all bg-pink-500"
+                  style={{ width: `${Math.min((impressions / 10000) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Target: 10,000 impressions</p>
+            </div>
+          </div>
+  
+          {kpi.calculable && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-green-600 font-medium">
+              <RefreshCw className="w-3 h-3" />
+              Auto-calculated from data
+            </div>
+          )}
+        </div>
+      );
+    }
+  
+    // Regular KPI card for all other KPIs
     const safeCurrent = kpi.currentValue != null ? Number(kpi.currentValue) : null;
     const safeTarget = kpi.targetValue != null ? Number(kpi.targetValue) : null;
     const progressPct = safeTarget && safeTarget !== 0 && safeCurrent !== null
       ? Math.min((Math.abs(safeCurrent) / Math.abs(safeTarget)) * 100, 100)
       : 0;
-
+  
     return (
       <div
         key={index}
@@ -1009,13 +1097,13 @@ const jsonData = await parseExcelFile(file, sheetName);
             {kpi.status}
           </span>
         </div>
-
+  
         <div className="space-y-3">
           <div className="bg-slate-50 rounded-lg p-3">
             <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
             <p className="text-sm text-slate-600">{kpi.target}</p>
           </div>
-
+  
           <div className="pt-2">
             <div className="flex justify-between text-sm mb-1">
               <span className="text-slate-600">Current Progress:</span>
@@ -1032,7 +1120,7 @@ const jsonData = await parseExcelFile(file, sheetName);
             </div>
           </div>
         </div>
-
+  
         {kpi.calculable && (
           <div className="mt-4 flex items-center justify-center gap-2 text-xs text-green-600 font-medium">
             <RefreshCw className="w-3 h-3" />
@@ -1042,7 +1130,6 @@ const jsonData = await parseExcelFile(file, sheetName);
       </div>
     );
   };
-
   const FileUploadSection = ({ fileType, label, description }) => {
     const status = uploadStatus[fileType];
     const hasFile = uploadedFiles[fileType] !== null;
