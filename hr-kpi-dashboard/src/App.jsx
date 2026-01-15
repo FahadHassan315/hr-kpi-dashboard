@@ -419,30 +419,20 @@ const parseExcelFile = async (file, sheetName = null) => {
       const start = new Date(startDate);
       const end = new Date(endDate);
       
-      const filteredData = data.filter(row => {
-        const dateStr = row['Date'];
-        const rowDate = dateStr ? new Date(dateStr) : null;
-        const inRange = rowDate && !isNaN(rowDate.getTime()) && rowDate >= start && rowDate <= end;
-        if (data.indexOf(row) < 5) {
-          console.log('Row date:', dateStr, '→ Parsed:', rowDate, '| In range:', inRange, '| Total followers:', row['Total followers']);
-        }
-        return inRange;
-      });
+      // Sum the "Total followers" column for the date range
+      const totalFollowers = data
+        .filter(row => {
+          const dateStr = row['Date'];
+          const rowDate = dateStr ? new Date(dateStr) : null;
+          return rowDate && !isNaN(rowDate.getTime()) && rowDate >= start && rowDate <= end;
+        })
+        .reduce((sum, row) => {
+          const followers = parseFloat(row['Total followers']) || 0;
+          return sum + followers;
+        }, 0);
       
-      console.log('Filtered rows:', filteredData.length);
-      
-      if (filteredData.length === 0) {
-        console.log('No data in date range!');
-        return null;
-      }
-      
-      const lastEntry = filteredData[filteredData.length - 1];
-      console.log('Last entry in range:', lastEntry);
-      
-      const result = parseFloat(lastEntry['Total followers']) || 0;
-      console.log('Final followers result:', result);
-      
-      return result;
+      console.log('Total followers gained in range:', totalFollowers);
+      return totalFollowers;
     } catch (error) {
       console.error('Error calculating LinkedIn followers:', error);
       return null;
