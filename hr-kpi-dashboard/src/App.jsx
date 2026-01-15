@@ -407,15 +407,19 @@ const parseExcelFile = async (file) => {
       console.log('=== FOLLOWERS DEBUG ===');
       console.log('Date range:', startDate, 'to', endDate);
       console.log('Total rows:', data.length);
-      console.log('First 3 rows:', data.slice(0, 3));
+      console.log('First row:', data[0]);
+      console.log('Column names:', Object.keys(data[0]));
       
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       const filteredData = data.filter(row => {
-        const rowDate = parseMaybeDate(row['Date']);
-        const inRange = rowDate && rowDate >= start && rowDate <= end;
-        console.log('Row date:', row['Date'], '→ Parsed:', rowDate, '| In range:', inRange, '| Total followers:', row['Total followers']);
+        const dateStr = row['Date'];
+        const rowDate = dateStr ? new Date(dateStr) : null;
+        const inRange = rowDate && !isNaN(rowDate.getTime()) && rowDate >= start && rowDate <= end;
+        if (data.indexOf(row) < 5) {
+          console.log('Row date:', dateStr, '→ Parsed:', rowDate, '| In range:', inRange, '| Total followers:', row['Total followers']);
+        }
         return inRange;
       });
       
@@ -428,7 +432,6 @@ const parseExcelFile = async (file) => {
       
       const lastEntry = filteredData[filteredData.length - 1];
       console.log('Last entry in range:', lastEntry);
-      console.log('Total followers value from last entry:', lastEntry['Total followers']);
       
       const result = parseFloat(lastEntry['Total followers']) || 0;
       console.log('Final followers result:', result);
@@ -439,26 +442,26 @@ const parseExcelFile = async (file) => {
       return null;
     }
   };
-    
+  
   const calculateLinkedInPageViews = (data, startDate, endDate) => {
     try {
       console.log('=== PAGE VIEWS DEBUG ===');
       console.log('Date range:', startDate, 'to', endDate);
       console.log('Total rows:', data.length);
-      console.log('First 3 rows:', data.slice(0, 3));
+      console.log('First row:', data[0]);
+      console.log('Column names:', Object.keys(data[0]));
       
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       const totalViews = data
         .filter(row => {
-          const rowDate = parseMaybeDate(row['Date']);
-          console.log('Row date:', row['Date'], '→ Parsed:', rowDate, '| Page views column:', row['Total page views (total)']);
-          return rowDate && rowDate >= start && rowDate <= end;
+          const dateStr = row['Date'];
+          const rowDate = dateStr ? new Date(dateStr) : null;
+          return rowDate && !isNaN(rowDate.getTime()) && rowDate >= start && rowDate <= end;
         })
         .reduce((sum, row) => {
           const views = parseFloat(row['Total page views (total)']) || 0;
-          console.log('Adding views:', views, '| Current sum:', sum);
           return sum + views;
         }, 0);
       
@@ -469,26 +472,26 @@ const parseExcelFile = async (file) => {
       return null;
     }
   };
-    
+  
   const calculateLinkedInImpressions = (data, startDate, endDate) => {
     try {
       console.log('=== IMPRESSIONS DEBUG ===');
       console.log('Date range:', startDate, 'to', endDate);
       console.log('Total rows:', data.length);
-      console.log('First 3 rows:', data.slice(0, 3));
+      console.log('First row:', data[0]);
+      console.log('Column names:', Object.keys(data[0]));
       
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       const totalImpressions = data
         .filter(row => {
-          const rowDate = parseMaybeDate(row['Date']);
-          console.log('Row date:', row['Date'], '→ Parsed:', rowDate, '| Impressions column:', row['Impressions (total)']);
-          return rowDate && rowDate >= start && rowDate <= end;
+          const dateStr = row['Date'];
+          const rowDate = dateStr ? new Date(dateStr) : null;
+          return rowDate && !isNaN(rowDate.getTime()) && rowDate >= start && rowDate <= end;
         })
         .reduce((sum, row) => {
           const impressions = parseFloat(row['Impressions (total)']) || 0;
-          console.log('Adding impressions:', impressions, '| Current sum:', sum);
           return sum + impressions;
         }, 0);
       
