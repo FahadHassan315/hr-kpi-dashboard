@@ -433,15 +433,6 @@ const parseExcelFile = async (file) => {
       return null;
     }
   };
-            
-      // Get the last entry's total followers in the date range
-      const lastEntry = filteredData[filteredData.length - 1];
-      return parseFloat(lastEntry['Total followers']) || 0;
-    } catch (error) {
-      console.error('Error calculating LinkedIn followers:', error);
-      return null;
-    }
-  };
   
   const calculateLinkedInPageViews = (data, startDate, endDate) => {
     try {
