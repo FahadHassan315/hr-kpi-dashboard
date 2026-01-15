@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, BookOpen, Briefcase, X, Upload, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { Users, BookOpen, Briefcase, X, Upload, RefreshCw, CheckCircle, AlertCircle, ThumbsUp } from 'lucide-react';
 
 const HRKPIDashboard = () => {
   const [edmChartData, setEdmChartData] = useState({ company: [], type: [] });
@@ -16,9 +16,15 @@ const HRKPIDashboard = () => {
     recruitmentTracker: null,
     enpsSurvey: null,
     linkedinLearnerDetail: null,
-    linkedinLearning: null
+    linkedinLearning: null,
+    linkedinFollowers: null,
+    linkedinVisitors: null,
+    linkedinContent: null
   });
-
+  const [dateRange, setDateRange] = useState({
+    startDate: '2025-01-01',
+    endDate: '2025-12-31'
+  });
   useEffect(() => {
     const loadSampleEDMData = async () => {
       try {
@@ -267,6 +273,26 @@ const parseExcelFile = async (file) => {
         additionalInfo: 'Employees are considered to have fulfilled their talent development target once they complete at least 80% of their assigned LinkedIn Learning hours.'
       }
     }
+    {
+      companyPillar: 'Employer Branding',
+      hrPillar: 'P&C Organization',
+      kpi: 'LinkedIn Page Engagement',
+      target: 'Increase LinkedIn followers by 20%, achieve 5,000 total page views, and reach 10,000 total impressions',
+      currentValue: calculatedKPIs.linkedinEngagement?.followers || 0,
+      targetValue: 20,
+      status: 'In Progress',
+      icon: '📱',
+      calculable: true,
+      dataFile: 'linkedinFollowers',
+      details: {
+        description: 'Tracks the People and Culture LinkedIn page performance through follower growth, page views, and content impressions to measure employer brand visibility and engagement.',
+        dataSource: 'LinkedIn Followers Report, Visitors Report, and Content Report',
+        formula: 'Metrics calculated over selected date range: Total Followers (end of period), Total Page Views (sum), Total Impressions (sum)',
+        additionalInfo: calculatedKPIs.linkedinEngagement 
+          ? `Followers: ${calculatedKPIs.linkedinEngagement.followers || 0} | Page Views: ${calculatedKPIs.linkedinEngagement.pageViews || 0} | Impressions: ${calculatedKPIs.linkedinEngagement.impressions || 0}`
+          : 'Upload LinkedIn reports to see detailed engagement metrics.'
+      }
+    }
   ];
 
   const kpiData = getKPIData();
@@ -375,6 +401,72 @@ const parseExcelFile = async (file) => {
       return null;
     }
   };
+
+  const calculateLinkedInFollowers = (data, startDate, endDate) => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const filteredData = data.filter(row => {
+        const rowDate = parseMaybeDate(row['Date']);
+        return rowDate && rowDate >= start && rowDate <= end;
+      });
+      
+      if (filteredData.length === 0) return null;
+      
+      // Get the last entry's total followers in the date range
+      const lastEntry = filteredData[filteredData.length - 1];
+      return parseFloat(lastEntry['Total followers']) || 0;
+    } catch (error) {
+      console.error('Error calculating LinkedIn followers:', error);
+      return null;
+    }
+  };
+  
+  const calculateLinkedInPageViews = (data, startDate, endDate) => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const totalViews = data
+        .filter(row => {
+          const rowDate = parseMaybeDate(row['Date']);
+          return rowDate && rowDate >= start && rowDate <= end;
+        })
+        .reduce((sum, row) => {
+          const views = parseFloat(row['Total page views (total)']) || 0;
+          return sum + views;
+        }, 0);
+      
+      return totalViews;
+    } catch (error) {
+      console.error('Error calculating LinkedIn page views:', error);
+      return null;
+    }
+  };
+  
+  const calculateLinkedInImpressions = (data, startDate, endDate) => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const totalImpressions = data
+        .filter(row => {
+          const rowDate = parseMaybeDate(row['Date']);
+          return rowDate && rowDate >= start && rowDate <= end;
+        })
+        .reduce((sum, row) => {
+          const impressions = parseFloat(row['Impressions (total)']) || 0;
+          return sum + impressions;
+        }, 0);
+      
+      return totalImpressions;
+    } catch (error) {
+      console.error('Error calculating LinkedIn impressions:', error);
+      return null;
+    }
+  };
+  
   // KPI Calculation Functions
   const calculateTurnoverRate = (data) => {
     try {
@@ -754,6 +846,40 @@ const handleFileUpload = async (fileType, file) => {
       
       if (talentDevelopment !== null) newCalculations.talentDevelopment = talentDevelopment;
     }
+    } else if (fileType === 'linkedinFollowers') {
+      console.log('Processing LinkedIn Followers data...');
+      const followers = calculateLinkedInFollowers(jsonData, dateRange.startDate, dateRange.endDate);
+      console.log('LinkedIn followers:', followers);
+      
+      if (followers !== null) {
+        newCalculations.linkedinEngagement = {
+          ...(newCalculations.linkedinEngagement || {}),
+          followers: followers
+        };
+      }
+    } else if (fileType === 'linkedinVisitors') {
+      console.log('Processing LinkedIn Visitors data...');
+      const pageViews = calculateLinkedInPageViews(jsonData, dateRange.startDate, dateRange.endDate);
+      console.log('LinkedIn page views:', pageViews);
+      
+      if (pageViews !== null) {
+        newCalculations.linkedinEngagement = {
+          ...(newCalculations.linkedinEngagement || {}),
+          pageViews: pageViews
+        };
+      }
+    } else if (fileType === 'linkedinContent') {
+      console.log('Processing LinkedIn Content data...');
+      const impressions = calculateLinkedInImpressions(jsonData, dateRange.startDate, dateRange.endDate);
+      console.log('LinkedIn impressions:', impressions);
+      
+      if (impressions !== null) {
+        newCalculations.linkedinEngagement = {
+          ...(newCalculations.linkedinEngagement || {}),
+          impressions: impressions
+        };
+      }
+    }    
 
     setCalculatedKPIs(newCalculations);
     setUploadStatus(prev => ({ ...prev, [fileType]: 'success' }));
@@ -775,13 +901,15 @@ const handleFileUpload = async (fileType, file) => {
   const pillarColors = {
     'Talent Acquisition': '#3498DB',
     'Talent Management': '#9B59B6',
-    'Learning': '#E67E22'
+    'Learning': '#E67E22',
+    'Employer Branding': '#E91E63'
   };
 
   const pillarIcons = {
     'Talent Acquisition': Users,
     'Talent Management': Briefcase,
-    'Learning': BookOpen
+    'Learning': BookOpen,
+    'Employer Branding': ThumbsUp
   };
 
   const filteredData = selectedPillar === 'all'
@@ -1170,6 +1298,29 @@ const handleFileUpload = async (fileType, file) => {
               </ul>
             </div>
           </div>
+          
+            {/* Employer Branding Goals */}
+            <div className="bg-white bg-opacity-10 rounded-lg p-5 border border-pink-400 border-opacity-30">
+              <div className="flex items-center gap-2 mb-3">
+                <ThumbsUp className="w-5 h-5 text-pink-300" />
+                <h3 className="font-bold text-lg">Employer Branding</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-slate-100">
+                <li className="flex gap-2">
+                  <span className="text-pink-300 font-bold">→</span>
+                  <span>Increase LinkedIn followers by 20% through strategic content and engagement</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-pink-300 font-bold">→</span>
+                  <span>Achieve 5,000 total page views to enhance employer brand visibility</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-pink-300 font-bold">→</span>
+                  <span>Reach 10,000 total impressions showcasing company culture and opportunities</span>
+                </li>
+              </ul>
+            </div>
+          </div>
 
           <div className="mt-6 p-4 bg-blue-500 bg-opacity-20 rounded-lg border border-blue-400 border-opacity-50">
             <p className="text-sm text-slate-200">
@@ -1260,7 +1411,30 @@ const handleFileUpload = async (fileType, file) => {
                   label="LinkedIn Learning Report"
                   description="Learning progress data with email, target hours, and remaining hours for talent development"
                 />
-
+                <div className="border-t-2 border-slate-300 my-4"></div>
+                
+                <div className="bg-pink-50 rounded-lg p-4 border border-pink-200 mb-4">
+                  <h3 className="font-semibold text-pink-900 mb-2">📱 LinkedIn Page Analytics</h3>
+                  <p className="text-sm text-pink-800">Upload all three reports to track employer branding performance</p>
+                </div>
+                
+                <FileUploadSection
+                  fileType="linkedinFollowers"
+                  label="LinkedIn Followers Report"
+                  description="People and Culture page followers data with date and total followers"
+                />
+                
+                <FileUploadSection
+                  fileType="linkedinVisitors"
+                  label="LinkedIn Visitors Report"
+                  description="Page visitor analytics with total page views across all sections"
+                />
+                
+                <FileUploadSection
+                  fileType="linkedinContent"
+                  label="LinkedIn Content Report"
+                  description="Content performance data with impressions, clicks, reactions, and engagement"
+                />
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <h3 className="font-semibold text-blue-900 mb-2">📊 Auto-Calculated KPIs</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
@@ -1270,6 +1444,7 @@ const handleFileUpload = async (fileType, file) => {
                     <li>• <strong>Diversity Index</strong> - Calculated from EDM Report</li>
                     <li>• <strong>AI Training</strong> - Calculated from LinkedIn Learner Detail</li>
                     <li>• <strong>Talent Development</strong> - Calculated from LinkedIn Learning Report</li>
+                    <li>• <strong>LinkedIn Page Engagement</strong> - Calculated from LinkedIn Reports (Followers, Visitors, Content)</li>
                   </ul>
                 </div>
               </div>
