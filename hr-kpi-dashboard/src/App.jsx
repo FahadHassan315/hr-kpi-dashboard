@@ -404,13 +404,35 @@ const parseExcelFile = async (file) => {
 
   const calculateLinkedInFollowers = (data, startDate, endDate) => {
     try {
+      console.log('=== FOLLOWERS DEBUG ===');
+      console.log('Date range:', startDate, 'to', endDate);
+      console.log('Total rows:', data.length);
+      console.log('First 3 rows:', data.slice(0, 3));
+      
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       const filteredData = data.filter(row => {
         const rowDate = parseMaybeDate(row['Date']);
+        console.log('Row date:', row['Date'], '→ Parsed:', rowDate);
         return rowDate && rowDate >= start && rowDate <= end;
       });
+      
+      console.log('Filtered rows:', filteredData.length);
+      console.log('Filtered data:', filteredData);
+      
+      if (filteredData.length === 0) return null;
+      
+      const lastEntry = filteredData[filteredData.length - 1];
+      console.log('Last entry:', lastEntry);
+      console.log('Total followers value:', lastEntry['Total followers']);
+      
+      return parseFloat(lastEntry['Total followers']) || 0;
+    } catch (error) {
+      console.error('Error calculating LinkedIn followers:', error);
+      return null;
+    }
+  };
       
       if (filteredData.length === 0) return null;
       
