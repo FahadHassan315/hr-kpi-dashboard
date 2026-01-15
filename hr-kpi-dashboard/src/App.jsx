@@ -845,7 +845,6 @@ const handleFileUpload = async (fileType, file) => {
       console.log('Talent development:', talentDevelopment);
       
       if (talentDevelopment !== null) newCalculations.talentDevelopment = talentDevelopment;
-    }
     } else if (fileType === 'linkedinFollowers') {
       console.log('Processing LinkedIn Followers data...');
       const followers = calculateLinkedInFollowers(jsonData, dateRange.startDate, dateRange.endDate);
