@@ -433,9 +433,7 @@ const parseExcelFile = async (file) => {
       return null;
     }
   };
-      
-      if (filteredData.length === 0) return null;
-      
+            
       // Get the last entry's total followers in the date range
       const lastEntry = filteredData[filteredData.length - 1];
       return parseFloat(lastEntry['Total followers']) || 0;
