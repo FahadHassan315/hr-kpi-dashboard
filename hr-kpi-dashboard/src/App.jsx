@@ -1380,6 +1380,44 @@ const handleFileUpload = async (fileType, file) => {
               </div>
 
               <div className="p-6 space-y-6">
+                {/* Date Range Selector for LinkedIn Reports */}
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-5 border-2 border-pink-300">
+                  <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    📅 Date Range for LinkedIn Analytics
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Select the date range for calculating LinkedIn page metrics (followers, page views, impressions)
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={dateRange.startDate}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        value={dateRange.endDate}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">
+                    💡 Current selection: {new Date(dateRange.startDate).toLocaleDateString()} to {new Date(dateRange.endDate).toLocaleDateString()}
+                  </p>
+                </div>
+              
+              <div className="p-6 space-y-6">
                 <FileUploadSection
                   fileType="edmReport"
                   label="EDM Report"
