@@ -1296,7 +1296,6 @@ const handleFileUpload = async (fileType, file) => {
                 </li>
               </ul>
             </div>
-          </div>
           
             {/* Employer Branding Goals */}
             <div className="bg-white bg-opacity-10 rounded-lg p-5 border border-pink-400 border-opacity-30">
