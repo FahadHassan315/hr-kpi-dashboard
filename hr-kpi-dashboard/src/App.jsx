@@ -1416,8 +1416,7 @@ const handleFileUpload = async (fileType, file) => {
                     💡 Current selection: {new Date(dateRange.startDate).toLocaleDateString()} to {new Date(dateRange.endDate).toLocaleDateString()}
                   </p>
                 </div>
-              
-              <div className="p-6 space-y-6">
+            
                 <FileUploadSection
                   fileType="edmReport"
                   label="EDM Report"
