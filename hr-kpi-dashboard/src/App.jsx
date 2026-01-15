@@ -414,63 +414,85 @@ const parseExcelFile = async (file) => {
       
       const filteredData = data.filter(row => {
         const rowDate = parseMaybeDate(row['Date']);
-        console.log('Row date:', row['Date'], '→ Parsed:', rowDate);
-        return rowDate && rowDate >= start && rowDate <= end;
+        const inRange = rowDate && rowDate >= start && rowDate <= end;
+        console.log('Row date:', row['Date'], '→ Parsed:', rowDate, '| In range:', inRange, '| Total followers:', row['Total followers']);
+        return inRange;
       });
       
       console.log('Filtered rows:', filteredData.length);
-      console.log('Filtered data:', filteredData);
       
-      if (filteredData.length === 0) return null;
+      if (filteredData.length === 0) {
+        console.log('No data in date range!');
+        return null;
+      }
       
       const lastEntry = filteredData[filteredData.length - 1];
-      console.log('Last entry:', lastEntry);
-      console.log('Total followers value:', lastEntry['Total followers']);
+      console.log('Last entry in range:', lastEntry);
+      console.log('Total followers value from last entry:', lastEntry['Total followers']);
       
-      return parseFloat(lastEntry['Total followers']) || 0;
+      const result = parseFloat(lastEntry['Total followers']) || 0;
+      console.log('Final followers result:', result);
+      
+      return result;
     } catch (error) {
       console.error('Error calculating LinkedIn followers:', error);
       return null;
     }
   };
-  
+    
   const calculateLinkedInPageViews = (data, startDate, endDate) => {
     try {
+      console.log('=== PAGE VIEWS DEBUG ===');
+      console.log('Date range:', startDate, 'to', endDate);
+      console.log('Total rows:', data.length);
+      console.log('First 3 rows:', data.slice(0, 3));
+      
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       const totalViews = data
         .filter(row => {
           const rowDate = parseMaybeDate(row['Date']);
+          console.log('Row date:', row['Date'], '→ Parsed:', rowDate, '| Page views column:', row['Total page views (total)']);
           return rowDate && rowDate >= start && rowDate <= end;
         })
         .reduce((sum, row) => {
           const views = parseFloat(row['Total page views (total)']) || 0;
+          console.log('Adding views:', views, '| Current sum:', sum);
           return sum + views;
         }, 0);
       
+      console.log('Total page views calculated:', totalViews);
       return totalViews;
     } catch (error) {
       console.error('Error calculating LinkedIn page views:', error);
       return null;
     }
   };
-  
+    
   const calculateLinkedInImpressions = (data, startDate, endDate) => {
     try {
+      console.log('=== IMPRESSIONS DEBUG ===');
+      console.log('Date range:', startDate, 'to', endDate);
+      console.log('Total rows:', data.length);
+      console.log('First 3 rows:', data.slice(0, 3));
+      
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       const totalImpressions = data
         .filter(row => {
           const rowDate = parseMaybeDate(row['Date']);
+          console.log('Row date:', row['Date'], '→ Parsed:', rowDate, '| Impressions column:', row['Impressions (total)']);
           return rowDate && rowDate >= start && rowDate <= end;
         })
         .reduce((sum, row) => {
           const impressions = parseFloat(row['Impressions (total)']) || 0;
+          console.log('Adding impressions:', impressions, '| Current sum:', sum);
           return sum + impressions;
         }, 0);
       
+      console.log('Total impressions calculated:', totalImpressions);
       return totalImpressions;
     } catch (error) {
       console.error('Error calculating LinkedIn impressions:', error);
