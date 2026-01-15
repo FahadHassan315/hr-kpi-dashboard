@@ -272,7 +272,7 @@ const parseExcelFile = async (file) => {
         formula: 'Talent Development (%) = (Employees with ≥80% target completion / Total Employees in sheet) × 100',
         additionalInfo: 'Employees are considered to have fulfilled their talent development target once they complete at least 80% of their assigned LinkedIn Learning hours.'
       }
-    }
+    },
     {
       companyPillar: 'Employer Branding',
       hrPillar: 'P&C Organization',
