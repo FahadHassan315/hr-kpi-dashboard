@@ -1124,7 +1124,7 @@ const jsonData = await parseExcelFile(file, sheetName);
           <div
             key={index}
             onClick={() => handleKPIClick(kpi)}
-            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1"
+            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1 h-full"
             style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
           >
             <div className="flex items-start justify-between mb-4">
