@@ -1757,6 +1757,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                       <div className="text-5xl">{selectedKPI.icon}</div>
                     </div>
                   </div>
+               )}
               
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">2025 Target</p>
