@@ -1746,9 +1746,17 @@ const jsonData = await parseExcelFile(file, sheetName);
               </div>
 
               <div className="p-6 space-y-6">
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
-                  {/* Current Value section */}
-                </div>
+                {/* Only show current value section if KPI has meaningful data */}
+                {selectedKPI.currentValue != null && selectedKPI.currentValue > 0 && (
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">Current Progress</p>
+                        <p className="text-4xl font-bold text-slate-800">{selectedKPI.currentValue}%</p>
+                      </div>
+                      <div className="text-5xl">{selectedKPI.icon}</div>
+                    </div>
+                  </div>
               
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">2025 Target</p>
