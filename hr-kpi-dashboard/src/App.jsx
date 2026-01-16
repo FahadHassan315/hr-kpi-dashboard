@@ -212,13 +212,64 @@ const parseExcelFile = async (file, sheetName = null) => {
       target: 'Implement AI in 25% of P&C processes',
       currentValue: 0,
       targetValue: 25,
-      status: 'Planning',
+      status: 'In Progress',
       icon: '🤖',
       calculable: false,
       details: {
-        description: 'Tracks the adoption of AI technology in HR processes to improve efficiency and decision-making.',
-        dataSource: null,
-        formula: null
+        description: 'Tracks the adoption of AI technology across HR processes to improve efficiency, decision-making, and employee experience through intelligent automation.',
+        dataSource: 'Internal AI Implementation Tracking',
+        formula: null,
+        aiTools: [
+          {
+            name: 'Feedalytics',
+            category: 'AI Resume Intelligence, JD Generator & Interview Analytics',
+            achievements: [
+              'Time to fill reduced by 11% (from 25.04 to 22.7 days)',
+              'Achieved shortlisting accuracy of 72% across 23 positions',
+              'Reduced resume screening time from 5-8 minutes to under 30 seconds',
+              'Streamlined job description creation process'
+            ],
+            status: 'Operational'
+          },
+          {
+            name: 'LinkedIn Learning AI Coaching',
+            category: 'AI-Powered Employee Development',
+            achievements: [
+              'Completed LM Readiness session with learning dashboard access',
+              'Identified domain-specific learning paths (Tech, Presales, Customer Delight, Account Management, Productivity, Technical)',
+              'Achieved 97% completion rate across training programs',
+              'Delivered AI coaching insights to enhance skill development'
+            ],
+            status: 'Achieved'
+          },
+          {
+            name: 'Botnostic Solutions',
+            category: 'Talent Management & Training Needs Assessment',
+            achievements: [
+              'Business Requirements Document (BRD) finalized',
+              'Promotion policy framework established',
+              'Performance Development Plan (PDP) template created',
+              'Current grade structure documented',
+              'Over 10 job descriptions standardized',
+              'Business unit organograms mapped',
+              'Contract executed and implementation underway'
+            ],
+            status: 'In Implementation'
+          },
+          {
+            name: 'HR Chatbot',
+            category: 'AI-Driven HR Resource & Workforce Analytics',
+            achievements: [
+              'Successfully reviewed all 44 HR policies through AI analysis',
+              'Implemented intelligent questioning system for policy accuracy',
+              'Streamlined employee access to HR resources',
+              'Real-time workforce insights enabled for strategic decision-making',
+              'Currently refining data accuracy based on initial feedback'
+            ],
+            status: 'In Refinement'
+          }
+        ],
+        additionalInfo: 'Four AI-powered solutions are actively transforming P&C operations: Feedalytics for recruitment intelligence, LinkedIn Learning for AI coaching, Botnostic for talent management, and an HR Chatbot for employee self-service and analytics.'
       }
     },
     {
@@ -979,6 +1030,7 @@ const jsonData = await parseExcelFile(file, sheetName);
   const KPICard = ({ kpi, index }) => {
     // Special handling for LinkedIn Page Engagement KPI
     const isLinkedInKPI = kpi.kpi === 'LinkedIn Page Engagement';
+    const isAIProcessesKPI = kpi.kpi === 'AI-Driven P&C Processes';
     
     if (isLinkedInKPI) {
       const followers = calculatedKPIs.linkedinEngagement?.followers || 0;
@@ -1064,6 +1116,65 @@ const jsonData = await parseExcelFile(file, sheetName);
         </div>
       );
     }
+
+    if (isAIProcessesKPI) {
+        const aiTools = kpi.details.aiTools || [];
+        
+        return (
+          <div
+            key={index}
+            onClick={() => handleKPIClick(kpi)}
+            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1"
+            style={{ borderTopColor: pillarColors[kpi.companyPillar] }}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <div className="text-3xl mb-2">{kpi.icon}</div>
+                <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
+                <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {kpi.status}
+              </span>
+            </div>
+    
+            <div className="space-y-3">
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-sm font-medium text-slate-700 mb-2">2025 Target:</p>
+                <p className="text-sm text-slate-600">{kpi.target}</p>
+              </div>
+    
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
+                <p className="text-xs font-semibold text-purple-900 uppercase tracking-wide mb-3">
+                  Active AI Solutions
+                </p>
+                <div className="space-y-2">
+                  {aiTools.map((tool, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-2 border-b border-purple-100 last:border-0">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-800">{tool.name}</p>
+                        <p className="text-xs text-slate-500">{tool.category}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        tool.status === 'Operational' ? 'bg-green-100 text-green-700' :
+                        tool.status === 'Achieved' ? 'bg-blue-100 text-blue-700' :
+                        tool.status === 'In Implementation' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {tool.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <p className="text-xs text-center text-slate-500 italic mt-3">
+                Click to view detailed achievements for each solution
+              </p>
+            </div>
+          </div>
+        );
+      }    
   
     // Regular KPI card for all other KPIs
     const safeCurrent = kpi.currentValue != null ? Number(kpi.currentValue) : null;
@@ -1666,6 +1777,48 @@ const jsonData = await parseExcelFile(file, sheetName);
                     </div>
                   </div>
                 )}
+                {/* AI Tools Detailed View */}
+                {selectedKPI.details.aiTools && (
+                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-5 border-2 border-purple-300">
+                    <p className="text-sm font-semibold text-purple-900 uppercase tracking-wide mb-4">
+                      🤖 AI Solutions & Achievements
+                    </p>
+                    <div className="space-y-4">
+                      {selectedKPI.details.aiTools.map((tool, idx) => (
+                        <div key={idx} className="bg-white rounded-lg p-4 border border-purple-200">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h4 className="font-bold text-slate-800 text-base">{tool.name}</h4>
+                              <p className="text-sm text-slate-600 mt-1">{tool.category}</p>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              tool.status === 'Operational' ? 'bg-green-100 text-green-800' :
+                              tool.status === 'Achieved' ? 'bg-blue-100 text-blue-800' :
+                              tool.status === 'In Implementation' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-orange-100 text-orange-800'
+                            }`}>
+                              {tool.status}
+                            </span>
+                          </div>
+                          <div className="mt-3">
+                            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
+                              Key Achievements
+                            </p>
+                            <ul className="space-y-1.5">
+                              {tool.achievements.map((achievement, aidx) => (
+                                <li key={aidx} className="text-sm text-slate-700 flex items-start gap-2">
+                                  <span className="text-purple-500 font-bold mt-0.5">✓</span>
+                                  <span>{achievement}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
 
                 {selectedKPI.details.additionalInfo && (
                   <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
