@@ -1,11 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.https://gljanuiwwgqzrirtgnmn.supabase.co;
-const supabaseAnonKey = import.meta.env.sb_publishable_eaScgsBqe_-3rsFj6g0UTw_Nf-Tjpn4;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Helper function to get/set user ID
 export const getUserId = () => {
   let userId = localStorage.getItem('hr_dashboard_user_id');
   if (!userId) {
