@@ -353,18 +353,33 @@ const parseExcelFile = async (file, sheetName = null) => {
   ];
 
   const kpiData = getKPIData();
-  const calculateAITraining = (learnerData) => {
+  const calculateAITraining = (learnerData, learningData = null) => {
     try {
-      // Get total unique employees with LinkedIn Learning license
-      const allLearners = new Set();
-      learnerData.forEach(row => {
-        const email = row['Email'];
-        if (email) {
-          allLearners.add(email.trim().toLowerCase());
-        }
-      });
-  
-      const totalLearners = allLearners.size;
+      // Get total unique employees with LinkedIn Learning license from LinkedIn Learning Report
+      let totalLearners = 0;
+      
+      if (learningData) {
+        // Use LinkedIn Learning Report for total license count
+        const allLearners = new Set();
+        learningData.forEach(row => {
+          const email = row['Email'];
+          if (email) {
+            allLearners.add(email.trim().toLowerCase());
+          }
+        });
+        totalLearners = allLearners.size;
+      } else {
+        // Fallback: use Learner Detail if Learning Report not uploaded yet
+        const allLearners = new Set();
+        learnerData.forEach(row => {
+          const email = row['Email'];
+          if (email) {
+            allLearners.add(email.trim().toLowerCase());
+          }
+        });
+        totalLearners = allLearners.size;
+      }
+    
       if (totalLearners === 0) return null;
   
       const aiTrainedEmails = new Set();
@@ -938,7 +953,11 @@ const jsonData = await parseExcelFile(file, sheetName);
       if (engagementScore !== null) newCalculations.engagementScore = engagementScore;
     } else if (fileType === 'linkedinLearnerDetail') {
       console.log('Calculating AI training...');
-      const aiTraining = calculateAITraining(jsonData);
+      // Pass both Learner Detail and Learning Report (if available)
+      const aiTraining = calculateAITraining(
+        jsonData, 
+        uploadedFiles.linkedinLearning || newCalculations.linkedinLearningData
+      );
       console.log('AI training:', aiTraining);
       
       if (aiTraining !== null) {
@@ -955,6 +974,20 @@ const jsonData = await parseExcelFile(file, sheetName);
       console.log('Talent development:', talentDevelopment);
       
       if (talentDevelopment !== null) newCalculations.talentDevelopment = talentDevelopment;
+      
+      // Store the Learning Report data for AI Training calculation
+      newCalculations.linkedinLearningData = jsonData;
+      
+      // Recalculate AI Training if Learner Detail is already uploaded
+      if (uploadedFiles.linkedinLearnerDetail) {
+        console.log('Recalculating AI training with LinkedIn Learning total...');
+        const aiTraining = calculateAITraining(uploadedFiles.linkedinLearnerDetail, jsonData);
+        console.log('Updated AI training:', aiTraining);
+        
+        if (aiTraining !== null) {
+          newCalculations.aiTraining = aiTraining;
+        }
+      }
     } else if (fileType === 'linkedinFollowers') {
       console.log('Processing LinkedIn Followers data...');
       const followers = calculateLinkedInFollowers(jsonData, dateRange.startDate, dateRange.endDate);
