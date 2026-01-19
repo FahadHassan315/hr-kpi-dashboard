@@ -713,33 +713,33 @@ const findBestSheetForLearning = (workbook) => {
   };
   
   // KPI Calculation Functions
-  const calculateTurnoverRate = (data) => {
+  const calculateTurnoverRate = (data, startDateStr, endDateStr) => {
     try {
-      const startDate = new Date('2025-07-01');
-      const endDate = new Date('2025-12-31');
-
+      const startDate = new Date(startDateStr);
+      const endDate = new Date(endDateStr);
+  
       const exits = data.filter(row => {
         const exitDate = parseMaybeDate(row['Exit Date']);
         return exitDate && exitDate >= startDate && exitDate <= endDate;
       }).length;
-
+  
       const headcountStart = data.filter(row => {
         const joiningDate = parseMaybeDate(row['Joining Date']);
         const exitDate = parseMaybeDate(row['Exit Date']);
         return joiningDate && joiningDate <= startDate &&
                (!exitDate || exitDate >= startDate);
       }).length;
-
+  
       const headcountEnd = data.filter(row => {
         const joiningDate = parseMaybeDate(row['Joining Date']);
         const exitDate = parseMaybeDate(row['Exit Date']);
         return joiningDate && joiningDate <= endDate &&
                (!exitDate || exitDate > endDate);
       }).length;
-
+  
       const avgHeadcount = (headcountStart + headcountEnd) / 2;
       const turnoverRate = avgHeadcount > 0 ? (exits / avgHeadcount) * 100 : 0;
-
+  
       return parseFloat(turnoverRate.toFixed(1));
     } catch (error) {
       console.error('Error calculating turnover rate:', error);
@@ -809,10 +809,10 @@ const findBestSheetForLearning = (workbook) => {
     return average;
   };
     
-  const calculateTimeToFill = (data) => {
+  const calculateTimeToFill = (data, startDateStr, endDateStr) => {
     try {
-      const startDate = new Date('2025-07-01');
-      const today = new Date();
+      const startDate = new Date(startDateStr);
+      const endDate = new Date(endDateStr);
   
       const step1Results = [];
       
@@ -836,7 +836,7 @@ const findBestSheetForLearning = (workbook) => {
         }
         
         // Step 2: Check if ERF is in range for averaging
-        const inRange = erfDate && erfDate >= startDate && erfDate <= today;
+        const inRange = erfDate && erfDate >= startDate && erfDate <= endDate;
         
         if (typeof timeToFill2 === 'number' && inRange && timeToFill2 >= 0) {
           step1Results.push(timeToFill2);
@@ -1066,7 +1066,7 @@ const jsonData = await parseExcelFile(file, sheetName);
 
     if (fileType === 'edmReport') {
       console.log('Calculating turnover and diversity...');
-      const turnoverRate = calculateTurnoverRate(jsonData);
+      const turnoverRate = calculateTurnoverRate(jsonData, turnoverDateRange.startDate, turnoverDateRange.endDate);
       const diversityIndex = calculateDiversityIndex(jsonData);
       const totalActiveEmployees = getTotalActiveEmployees(jsonData);
       const chartData = calculateEDMCharts(jsonData);
@@ -1090,7 +1090,7 @@ const jsonData = await parseExcelFile(file, sheetName);
       }
     } else if (fileType === 'recruitmentTracker') {
       console.log('Calculating time to fill...');
-      const timeToFill = calculateTimeToFill(jsonData);
+      const timeToFill = calculateTimeToFill(jsonData, timeToFillDateRange.startDate, timeToFillDateRange.endDate);
       console.log('Time to fill:', timeToFill);
       
       if (timeToFill !== null) newCalculations.timeToFill = timeToFill;
@@ -1862,7 +1862,80 @@ const jsonData = await parseExcelFile(file, sheetName);
                     💡 Current selection: {new Date(dateRange.startDate).toLocaleDateString()} to {new Date(dateRange.endDate).toLocaleDateString()}
                   </p>
                 </div>
-            
+                            {/* Date Range for Turnover Rate */}
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-5 border-2 border-blue-300">
+                  <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    📉 Date Range for Turnover Rate
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Select the date range for calculating employee turnover rate
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={turnoverDateRange.startDate}
+                        onChange={(e) => setTurnoverDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        value={turnoverDateRange.endDate}
+                        onChange={(e) => setTurnoverDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">
+                    💡 Current selection: {new Date(turnoverDateRange.startDate).toLocaleDateString()} to {new Date(turnoverDateRange.endDate).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {/* Date Range for Time to Fill */}
+                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-5 border-2 border-orange-300">
+                  <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    ⏱️ Date Range for Time to Fill
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Select the date range for calculating average time to fill positions
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={timeToFillDateRange.startDate}
+                        onChange={(e) => setTimeToFillDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        value={timeToFillDateRange.endDate}
+                        onChange={(e) => setTimeToFillDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">
+                    💡 Current selection: {new Date(timeToFillDateRange.startDate).toLocaleDateString()} to {new Date(timeToFillDateRange.endDate).toLocaleDateString()}
+                  </p>
+                </div>
+                
                 <FileUploadSection
                   fileType="edmReport"
                   label="EDM Report"
