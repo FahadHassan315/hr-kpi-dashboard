@@ -1,3 +1,15 @@
+import {
+  saveUploadedFile,
+  getUploadedFiles,
+  saveCalculatedKPI,
+  getCalculatedKPIs,
+  saveDateRange,
+  getDateRanges,
+  saveEDMChartData,
+  getEDMChartData,
+  initializeUserContext,
+  clearAllUserData
+} from './lib/supabaseHelpers';
 import React, { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -21,18 +33,23 @@ const HRKPIDashboard = () => {
     linkedinVisitors: null,
     linkedinContent: null
   });
-  const [dateRange, setDateRange] = useState({
-      startDate: '2025-01-01',
-      endDate: '2025-12-31'
-    });
-    const [turnoverDateRange, setTurnoverDateRange] = useState({
-      startDate: '2025-07-01',
-      endDate: '2025-12-31'
-    });
-    const [timeToFillDateRange, setTimeToFillDateRange] = useState({
-      startDate: '2025-07-01',
-      endDate: '2025-12-31'
-    });
+
+  // Wrap the setDateRange
+  const updateDateRange = async (newRange) => {
+    setDateRange(newRange);
+    await saveDateRange('linkedin', newRange.startDate, newRange.endDate);
+  };
+  
+  const updateTurnoverDateRange = async (newRange) => {
+    setTurnoverDateRange(newRange);
+    await saveDateRange('turnover', newRange.startDate, newRange.endDate);
+  };
+  
+  const updateTimeToFillDateRange = async (newRange) => {
+    setTimeToFillDateRange(newRange);
+    await saveDateRange('timeToFill', newRange.startDate, newRange.endDate);
+  };
+  
   useEffect(() => {
     const loadSampleEDMData = async () => {
       try {
@@ -52,7 +69,64 @@ const HRKPIDashboard = () => {
     
     loadSampleEDMData();
   }, []);
-
+// Load persisted data from Supabase
+  useEffect(() => {
+    const loadPersistedData = async () => {
+      try {
+        await initializeUserContext();
+        
+        // Load date ranges
+        const ranges = await getDateRanges();
+        ranges.forEach(range => {
+          if (range.range_type === 'linkedin') {
+            setDateRange({ startDate: range.start_date, endDate: range.end_date });
+          } else if (range.range_type === 'turnover') {
+            setTurnoverDateRange({ startDate: range.start_date, endDate: range.end_date });
+          } else if (range.range_type === 'timeToFill') {
+            setTimeToFillDateRange({ startDate: range.start_date, endDate: range.end_date });
+          }
+        });
+        
+        // Load calculated KPIs
+        const kpis = await getCalculatedKPIs();
+        const kpiObj = {};
+        kpis.forEach(kpi => {
+          if (kpi.metadata) {
+            kpiObj[kpi.kpi_name] = kpi.metadata;
+          } else {
+            kpiObj[kpi.kpi_name] = parseFloat(kpi.kpi_value);
+          }
+        });
+        setCalculatedKPIs(kpiObj);
+        
+        // Load EDM chart data
+        const chartData = await getEDMChartData();
+        if (chartData) {
+          setEdmChartData({
+            company: chartData.company_data || [],
+            type: chartData.type_data || []
+          });
+        }
+        
+        // Load uploaded files metadata
+        const files = await getUploadedFiles();
+        const fileObj = {};
+        files.forEach(file => {
+          fileObj[file.file_type] = { 
+            name: file.file_name, 
+            rowCount: file.row_count 
+          };
+        });
+        // Note: We store metadata, not actual file data
+        
+        console.log('Loaded persisted data from Supabase');
+      } catch (error) {
+        console.error('Error loading persisted data:', error);
+      }
+    };
+    
+    loadPersistedData();
+  }, []);
   // Utility: convert Excel serial date to JS Date (handles numbers produced by some XLSX exports)
   const excelSerialToDate = (serial) => {
     if (serial == null || serial === '') return null;
@@ -1052,6 +1126,25 @@ const handleFileUpload = async (fileType, file) => {
   console.log('File name:', file.name);
   console.log('File size:', file.size);
 
+await saveUploadedFile(fileType, file.name, jsonData.length);
+    
+    // Save all calculated KPIs
+    for (const [key, value] of Object.entries(newCalculations)) {
+      if (typeof value === 'object' && value !== null) {
+        await saveCalculatedKPI(key, null, value);
+      } else {
+        await saveCalculatedKPI(key, value);
+      }
+    }
+    
+    // Save EDM chart data if updated
+    if (fileType === 'edmReport' && edmChartData.company.length > 0) {
+      await saveEDMChartData(edmChartData.company, edmChartData.type);
+    }
+
+    setCalculatedKPIs(newCalculations);
+    setUploadStatus(prev => ({ ...prev, [fileType]: 'success' }));
+  
   setUploadStatus(prev => ({ ...prev, [fileType]: 'processing' }));
 
   try {
@@ -1540,6 +1633,18 @@ const jsonData = await parseExcelFile(file, sheetName);
               <Upload className="w-5 h-5" />
               Upload Data
             </button>
+            <button
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                  await clearAllUserData();
+                  window.location.reload();
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+            >
+              <RefreshCw className="w-5 h-5" />
+              Reset Data
+            </button>
           </div>
         </div>
 
@@ -1850,7 +1955,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                       <input
                         type="date"
                         value={dateRange.startDate}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                        onChange={(e) => updateDateRange({ ...dateRange, startDate: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                       />
                     </div>
@@ -1861,7 +1966,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                       <input
                         type="date"
                         value={dateRange.endDate}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                        onChange={(e) => updateDateRange({ ...dateRange, endDate: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                       />
                     </div>
@@ -1886,7 +1991,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                       <input
                         type="date"
                         value={turnoverDateRange.startDate}
-                        onChange={(e) => setTurnoverDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                        onChange={(e) => updateTurnoverDateRange({ ...turnoverDateRange, startDate: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -1923,7 +2028,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                       <input
                         type="date"
                         value={timeToFillDateRange.startDate}
-                        onChange={(e) => setTimeToFillDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                        onChange={(e) => updateTimeToFillDateRange({ ...timeToFillDateRange, startDate: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       />
                     </div>
@@ -1934,7 +2039,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                       <input
                         type="date"
                         value={timeToFillDateRange.endDate}
-                        onChange={(e) => setTimeToFillDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                        onChange={(e) => updateTimeToFillDateRange({ ...timeToFillDateRange, endDate: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       />
                     </div>
