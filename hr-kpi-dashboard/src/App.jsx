@@ -1637,13 +1637,14 @@ const jsonData = await parseExcelFile(file, sheetName);
                 Track and monitor strategic HR objectives aligned with company goals
               </p>
             </div>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              <Upload className="w-5 h-5" />
-              Upload Data
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                <Upload className="w-5 h-5" />
+                Upload Data
+              </button>
             <button
               onClick={async () => {
                 if (window.confirm('Are you sure you want to reset all data? This cannot be undone.')) {
@@ -1656,6 +1657,7 @@ const jsonData = await parseExcelFile(file, sheetName);
               <RefreshCw className="w-5 h-5" />
               Reset Data
             </button>
+              </div>
           </div>
         </div>
 
