@@ -102,14 +102,22 @@ const HRKPIDashboard = () => {
         
         // Load calculated KPIs
         const kpis = await getCalculatedKPIs();
+        console.log('Loaded KPIs from database:', kpis); // DEBUG
         const kpiObj = {};
         kpis.forEach(kpi => {
-          if (kpi.metadata) {
-            kpiObj[kpi.kpi_name] = kpi.metadata;
-          } else {
-            kpiObj[kpi.kpi_name] = parseFloat(kpi.kpi_value);
+          const kpiName = kpi.kpi_name;
+          
+          // Check if this KPI has metadata (complex object like diversity, aiTraining, linkedinEngagement)
+          if (kpi.metadata && typeof kpi.metadata === 'object') {
+            kpiObj[kpiName] = kpi.metadata;
+          } 
+          // Otherwise use kpi_value (simple numbers)
+          else if (kpi.kpi_value !== null && kpi.kpi_value !== undefined) {
+            const numValue = parseFloat(kpi.kpi_value);
+            kpiObj[kpiName] = isNaN(numValue) ? kpi.kpi_value : numValue;
           }
         });
+        console.log('Processed KPI object:', kpiObj); // DEBUG
         setCalculatedKPIs(kpiObj);
         
         // Load EDM chart data
