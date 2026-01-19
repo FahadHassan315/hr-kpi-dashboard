@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.https://gljanuiwwgqzrirtgnmn.supabase.co;
+const supabaseAnonKey = import.meta.env.sb_publishable_eaScgsBqe_-3rsFj6g0UTw_Nf-Tjpn4;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -13,12 +13,4 @@ export const getUserId = () => {
     localStorage.setItem('hr_dashboard_user_id', userId);
   }
   return userId;
-};
-
-// Set user context for RLS
-export const setUserContext = async (userId) => {
-  await supabase.rpc('set_config', {
-    setting: 'app.user_id',
-    value: userId
-  });
 };
