@@ -69,7 +69,7 @@ const HRKPIDashboard = () => {
   };
 
   // Parse Excel file using local xlsx package
-const parseExcelFile = async (file, sheetName = null) => {
+const parseExcelFile = async (file, sheetName = null, fileType = null) => {
   return new Promise((resolve, reject) => {
     console.log('Starting to parse file:', file.name, file.type, file.size);
     
@@ -84,10 +84,26 @@ const parseExcelFile = async (file, sheetName = null) => {
         const workbook = XLSX.read(data, { type: 'array' });
         console.log('Workbook parsed, sheets:', workbook.SheetNames);
         
-        // Use specified sheet name or default to first sheet
-        const targetSheet = sheetName && workbook.SheetNames.includes(sheetName) 
-          ? sheetName 
-          : workbook.SheetNames[0];
+        // Determine target sheet
+        let targetSheet;
+        
+        if (sheetName && workbook.SheetNames.includes(sheetName)) {
+          // User specified exact sheet name and it exists
+          targetSheet = sheetName;
+        } else if (fileType === 'linkedinLearning') {
+          // Use smart detection for LinkedIn Learning
+          targetSheet = findBestSheetForLearning(workbook);
+        } else if (sheetName) {
+          // User specified sheet but it doesn't exist - try to find similar
+          console.warn(`Specified sheet "${sheetName}" not found, searching for similar...`);
+          const similar = workbook.SheetNames.find(name => 
+            name.toLowerCase().includes(sheetName.toLowerCase())
+          );
+          targetSheet = similar || workbook.SheetNames[0];
+        } else {
+          // Default to first sheet
+          targetSheet = workbook.SheetNames[0];
+        }
         
         console.log('Reading from sheet:', targetSheet);
         
@@ -100,7 +116,29 @@ const parseExcelFile = async (file, sheetName = null) => {
         });
         
         console.log('JSON data created, rows:', jsonData.length);
-        console.log('First row sample:', jsonData[0]);
+        if (jsonData.length > 0) {
+          console.log('First row sample:', jsonData[0]);
+          console.log('Available columns:', Object.keys(jsonData[0]));
+        }
+        
+        // Validate data has Email column if needed
+        if (fileType === 'linkedinLearning' || fileType === 'linkedinLearnerDetail') {
+          if (jsonData.length === 0) {
+            reject(new Error(`No data found in sheet: ${targetSheet}`));
+            return;
+          }
+          
+          const hasEmail = jsonData[0].hasOwnProperty('Email') || 
+                          jsonData[0].hasOwnProperty('email') ||
+                          Object.keys(jsonData[0]).some(key => 
+                            key.toLowerCase().includes('email')
+                          );
+          
+          if (!hasEmail) {
+            console.warn(`Warning: No Email column found in sheet ${targetSheet}`);
+            console.warn('Available columns:', Object.keys(jsonData[0]));
+          }
+        }
         
         resolve(jsonData);
       } catch (error) {
@@ -117,6 +155,75 @@ const parseExcelFile = async (file, sheetName = null) => {
     reader.readAsArrayBuffer(file);
   });
 };
+
+// Smart sheet detection for LinkedIn Learning Report
+const findBestSheetForLearning = (workbook) => {
+  const sheetNames = workbook.SheetNames;
+  console.log('Available sheets:', sheetNames);
+  
+  // Priority 1: Exact match for "LinkedIn Learner Summary"
+  if (sheetNames.includes('LinkedIn Learner Summary')) {
+    console.log('Found exact match: LinkedIn Learner Summary');
+    return 'LinkedIn Learner Summary';
+  }
+  
+  // Priority 2: Case-insensitive match for common variations
+  const commonNames = [
+    'linkedin learner summary',
+    'learner summary',
+    'summary',
+    'licenses',
+    'learning summary',
+    'employee learning'
+  ];
+  
+  for (const commonName of commonNames) {
+    const found = sheetNames.find(name => 
+      name.toLowerCase().includes(commonName)
+    );
+    if (found) {
+      console.log(`Found matching sheet: ${found}`);
+      return found;
+    }
+  }
+  
+  // Priority 3: Look for sheets with "learner" or "license" in name
+  const learnerSheet = sheetNames.find(name => 
+    name.toLowerCase().includes('learner') || 
+    name.toLowerCase().includes('license')
+  );
+  
+  if (learnerSheet) {
+    console.log(`Found sheet with learner/license keyword: ${learnerSheet}`);
+    return learnerSheet;
+  }
+  
+  // Priority 4: Use first sheet if it has Email column
+  console.log(`No matching sheet found, checking first sheet: ${sheetNames[0]}`);
+  const firstSheet = workbook.Sheets[sheetNames[0]];
+  const firstSheetData = XLSX.utils.sheet_to_json(firstSheet, { 
+    defval: null, 
+    raw: false,
+    header: 1  // Get first row as array to check headers
+  });
+  
+  if (firstSheetData.length > 0) {
+    const headers = firstSheetData[0];
+    const hasEmail = headers.some(h => 
+      h && h.toString().toLowerCase().includes('email')
+    );
+    
+    if (hasEmail) {
+      console.log(`First sheet has Email column, using: ${sheetNames[0]}`);
+      return sheetNames[0];
+    }
+  }
+  
+  // Fallback: just use first sheet
+  console.warn(`No suitable sheet found, defaulting to: ${sheetNames[0]}`);
+  return sheetNames[0];
+};
+  
   const getKPIData = () => [
     {
       companyPillar: 'Talent Acquisition',
@@ -353,51 +460,54 @@ const parseExcelFile = async (file, sheetName = null) => {
   ];
 
   const kpiData = getKPIData();
-  const calculateAITraining = (learnerData, learningData = null) => {
+  const calculateAITraining = (learnerData, totalLicenses = null) => {
     try {
-      // Get total unique employees with LinkedIn Learning license from LinkedIn Learning Report
+      // Find email column (case-insensitive)
+      const firstRow = learnerData[0];
+      const emailColumn = Object.keys(firstRow).find(key => 
+        key.toLowerCase().includes('email')
+      );
+      
+      if (!emailColumn) {
+        console.error('No Email column found in Learner Detail data');
+        return null;
+      }
+      
+      // Determine total learners
       let totalLearners = 0;
       
-      if (learningData) {
-        // Use LinkedIn Learning Report for total license count
-        const allLearners = new Set();
-        learningData.forEach(row => {
-          const email = row['Email'];
-          if (email) {
-            allLearners.add(email.trim().toLowerCase());
-          }
-        });
-        totalLearners = allLearners.size;
+      if (totalLicenses !== null && totalLicenses > 0) {
+        totalLearners = totalLicenses;
+        console.log('Using LinkedIn Learning Report total:', totalLearners);
       } else {
-        // Fallback: use Learner Detail if Learning Report not uploaded yet
         const allLearners = new Set();
         learnerData.forEach(row => {
-          const email = row['Email'];
+          const email = row[emailColumn];
           if (email) {
             allLearners.add(email.trim().toLowerCase());
           }
         });
         totalLearners = allLearners.size;
+        console.log('Using Learner Detail total (fallback):', totalLearners);
       }
     
       if (totalLearners === 0) return null;
-  
+    
       const aiTrainedEmails = new Set();
-  
+    
       learnerData.forEach(row => {
-        const email = row['Email'];
+        const email = row[emailColumn];
         const percentCompleted = row['Percent Completed'];
         const skills = row['Skills'];
-  
+    
         if (!email || !skills) return;
-  
-        // Check if skills contain AI or Artificial Intelligence
+    
         const skillsLower = skills.toLowerCase();
         const isAICourse = skillsLower.includes('artificial intelligence') || 
                           skillsLower.includes(' ai ') || 
                           skillsLower.startsWith('ai ') || 
                           skillsLower.endsWith(' ai');
-  
+    
         if (isAICourse) {
           let completionPercent = 0;
           if (typeof percentCompleted === 'string') {
@@ -405,13 +515,13 @@ const parseExcelFile = async (file, sheetName = null) => {
           } else if (typeof percentCompleted === 'number') {
             completionPercent = percentCompleted;
           }
-  
+    
           if (completionPercent >= 80) {
             aiTrainedEmails.add(email.trim().toLowerCase());
           }
         }
       });
-  
+    
       const aiTrainingRate = (aiTrainedEmails.size / totalLearners) * 100;
       return {
         percentage: parseFloat(aiTrainingRate.toFixed(1)),
@@ -422,7 +532,8 @@ const parseExcelFile = async (file, sheetName = null) => {
       console.error('Error calculating AI training:', error);
       return null;
     }
-  };  
+  };
+
 
   const getTotalActiveEmployees = (edmData) => {
     try {
@@ -473,7 +584,43 @@ const parseExcelFile = async (file, sheetName = null) => {
       return null;
     }
   };
-
+  const getTotalLinkedInLicenses = (learningData) => {
+    try {
+      if (!learningData || learningData.length === 0) {
+        console.warn('No learning data provided');
+        return null;
+      }
+      
+      const uniqueEmails = new Set();
+      
+      // Find the email column (case-insensitive)
+      const firstRow = learningData[0];
+      const emailColumn = Object.keys(firstRow).find(key => 
+        key.toLowerCase().includes('email')
+      );
+      
+      if (!emailColumn) {
+        console.error('No Email column found in LinkedIn Learning data');
+        console.log('Available columns:', Object.keys(firstRow));
+        return null;
+      }
+      
+      console.log(`Using email column: "${emailColumn}"`);
+      
+      learningData.forEach(row => {
+        const email = row[emailColumn];
+        if (email && email.trim() !== '') {
+          uniqueEmails.add(email.trim().toLowerCase());
+        }
+      });
+      
+      console.log('Total LinkedIn Learning licenses found:', uniqueEmails.size);
+      return uniqueEmails.size;
+    } catch (error) {
+      console.error('Error calculating LinkedIn licenses:', error);
+      return null;
+    }
+  };
   const calculateLinkedInFollowers = (data, startDate, endDate) => {
     try {
       console.log('=== FOLLOWERS DEBUG ===');
@@ -907,6 +1054,8 @@ const handleFileUpload = async (fileType, file) => {
       sheetName = 'Visitor metrics';
     } else if (fileType === 'linkedinContent') {
       sheetName = 'Metrics';
+    } else if (fileType === 'linkedinLearning') {
+      sheetName = 'LinkedIn Learner Summary';
     }
 
 const jsonData = await parseExcelFile(file, sheetName);
@@ -953,11 +1102,11 @@ const jsonData = await parseExcelFile(file, sheetName);
       if (engagementScore !== null) newCalculations.engagementScore = engagementScore;
     } else if (fileType === 'linkedinLearnerDetail') {
       console.log('Calculating AI training...');
-      // Pass both Learner Detail and Learning Report (if available)
-      const aiTraining = calculateAITraining(
-        jsonData, 
-        uploadedFiles.linkedinLearning || newCalculations.linkedinLearningData
-      );
+      
+      // Check if we have LinkedIn Learning total licenses already
+      const totalLicenses = calculatedKPIs.totalLinkedInLicenses || null;
+      
+      const aiTraining = calculateAITraining(jsonData, totalLicenses);
       console.log('AI training:', aiTraining);
       
       if (aiTraining !== null) {
@@ -975,9 +1124,14 @@ const jsonData = await parseExcelFile(file, sheetName);
       
       if (talentDevelopment !== null) newCalculations.talentDevelopment = talentDevelopment;
       
-      // Store the Learning Report data for AI Training calculation
-      newCalculations.linkedinLearningData = jsonData;
+      // Calculate total LinkedIn Learning licenses
+      const totalLicenses = getTotalLinkedInLicenses(jsonData);
+      console.log('Total LinkedIn Learning licenses:', totalLicenses);
       
+      if (totalLicenses !== null) {
+        newCalculations.totalLinkedInLicenses = totalLicenses;
+        
+        // Recalculate AI Training if Learner Detail already uploaded
       // Recalculate AI Training if Learner Detail is already uploaded
       if (uploadedFiles.linkedinLearnerDetail) {
         console.log('Recalculating AI training with LinkedIn Learning total...');
@@ -988,6 +1142,7 @@ const jsonData = await parseExcelFile(file, sheetName);
           newCalculations.aiTraining = aiTraining;
         }
       }
+    }
     } else if (fileType === 'linkedinFollowers') {
       console.log('Processing LinkedIn Followers data...');
       const followers = calculateLinkedInFollowers(jsonData, dateRange.startDate, dateRange.endDate);
