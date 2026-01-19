@@ -34,6 +34,19 @@ const HRKPIDashboard = () => {
     linkedinContent: null
   });
 
+  const [dateRange, setDateRange] = useState({
+    startDate: '2025-01-01',
+    endDate: '2025-12-31'
+  });
+  const [turnoverDateRange, setTurnoverDateRange] = useState({
+    startDate: '2025-07-01',
+    endDate: '2025-12-31'
+  });
+  const [timeToFillDateRange, setTimeToFillDateRange] = useState({
+    startDate: '2025-07-01',
+    endDate: '2025-12-31'
+  });
+  
   // Wrap the setDateRange
   const updateDateRange = async (newRange) => {
     setDateRange(newRange);
@@ -1126,27 +1139,6 @@ const handleFileUpload = async (fileType, file) => {
   console.log('File name:', file.name);
   console.log('File size:', file.size);
 
-await saveUploadedFile(fileType, file.name, jsonData.length);
-    
-    // Save all calculated KPIs
-    for (const [key, value] of Object.entries(newCalculations)) {
-      if (typeof value === 'object' && value !== null) {
-        await saveCalculatedKPI(key, null, value);
-      } else {
-        await saveCalculatedKPI(key, value);
-      }
-    }
-    
-    // Save EDM chart data if updated
-    if (fileType === 'edmReport' && edmChartData.company.length > 0) {
-      await saveEDMChartData(edmChartData.company, edmChartData.type);
-    }
-
-    setCalculatedKPIs(newCalculations);
-    setUploadStatus(prev => ({ ...prev, [fileType]: 'success' }));
-  
-  setUploadStatus(prev => ({ ...prev, [fileType]: 'processing' }));
-
   try {
     let sheetName = null;
     if (fileType === 'linkedinFollowers') {
@@ -1277,6 +1269,25 @@ const jsonData = await parseExcelFile(file, sheetName);
         };
       }
     }    
+
+    await saveUploadedFile(fileType, file.name, jsonData.length);
+    
+    // Save all calculated KPIs
+    for (const [key, value] of Object.entries(newCalculations)) {
+      if (typeof value === 'object' && value !== null) {
+        await saveCalculatedKPI(key, null, value);
+      } else {
+        await saveCalculatedKPI(key, value);
+      }
+    }
+    
+    // Save EDM chart data if updated
+    if (fileType === 'edmReport') {
+      const currentChartData = calculateEDMCharts(jsonData);
+      if (currentChartData.company.length > 0) {
+        await saveEDMChartData(currentChartData.company, currentChartData.type);
+      }
+    }
 
     setCalculatedKPIs(newCalculations);
     setUploadStatus(prev => ({ ...prev, [fileType]: 'success' }));
