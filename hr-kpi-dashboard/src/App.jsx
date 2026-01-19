@@ -1132,17 +1132,16 @@ const jsonData = await parseExcelFile(file, sheetName);
         newCalculations.totalLinkedInLicenses = totalLicenses;
         
         // Recalculate AI Training if Learner Detail already uploaded
-      // Recalculate AI Training if Learner Detail is already uploaded
-      if (uploadedFiles.linkedinLearnerDetail) {
-        console.log('Recalculating AI training with LinkedIn Learning total...');
-        const aiTraining = calculateAITraining(uploadedFiles.linkedinLearnerDetail, jsonData);
-        console.log('Updated AI training:', aiTraining);
-        
-        if (aiTraining !== null) {
-          newCalculations.aiTraining = aiTraining;
+        if (uploadedFiles.linkedinLearnerDetail) {
+          console.log('Recalculating AI training with correct total licenses...');
+          const aiTraining = calculateAITraining(uploadedFiles.linkedinLearnerDetail, totalLicenses);
+          console.log('Updated AI training:', aiTraining);
+          
+          if (aiTraining !== null) {
+            newCalculations.aiTraining = aiTraining;
+          }
         }
       }
-    }
     } else if (fileType === 'linkedinFollowers') {
       console.log('Processing LinkedIn Followers data...');
       const followers = calculateLinkedInFollowers(jsonData, dateRange.startDate, dateRange.endDate);
