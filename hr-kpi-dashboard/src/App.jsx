@@ -1856,12 +1856,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                     <p className="text-slate-700">{selectedKPI.details.additionalInfo}</p>
                   </div>
                 )}
-                {selectedKPI.details.additionalInfo && (
-                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                    <p className="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-2">Additional Information</p>
-                    <p className="text-slate-700">{selectedKPI.details.additionalInfo}</p>
-                  </div>
-                )}
+
                 {selectedKPI.kpi === 'Diversity & Inclusion Index' && calculatedKPIs.diversityBreakdowns && (
                   <div className="space-y-4">
                     {/* Gender Breakdown */}
@@ -1934,5 +1929,27 @@ const jsonData = await parseExcelFile(file, sheetName);
                     </div>
                   </div>
                 )}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                  <span className="text-sm text-slate-600 font-medium">Status:</span>
+                  <span
+                    className={`px-4 py-2 rounded-full text-sm font-bold ${
+                      selectedKPI.status === 'Start Tracking'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : selectedKPI.status === 'Planning'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {selectedKPI.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default HRKPIDashboard;
