@@ -1862,8 +1862,6 @@ const jsonData = await parseExcelFile(file, sheetName);
                     <p className="text-slate-700">{selectedKPI.details.additionalInfo}</p>
                   </div>
                 )}
-                
-                {/* PASTE THE DIVERSITY BREAKDOWN CODE HERE */}
                 {selectedKPI.kpi === 'Diversity & Inclusion Index' && calculatedKPIs.diversityBreakdowns && (
                   <div className="space-y-4">
                     {/* Gender Breakdown */}
@@ -1871,34 +1869,70 @@ const jsonData = await parseExcelFile(file, sheetName);
                       <p className="text-sm font-semibold text-blue-800 uppercase tracking-wide mb-3">
                         Gender Distribution (Approximate)
                       </p>
-                      ... rest of the code
+                      <div className="space-y-2">
+                        {Object.entries(calculatedKPIs.diversityBreakdowns.gender).map(([gender, percentage]) => (
+                          <div key={gender}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-slate-700">{gender}</span>
+                              <span className="font-bold text-slate-800">{percentage}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-3">
+                              <div
+                                className="h-3 rounded-full bg-blue-500"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                
+                    {/* Age Breakdown */}
+                    <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
+                      <p className="text-sm font-semibold text-green-800 uppercase tracking-wide mb-3">
+                        Age Distribution
+                      </p>
+                      <div className="space-y-2">
+                        {Object.entries(calculatedKPIs.diversityBreakdowns.age).map(([ageGroup, percentage]) => (
+                          <div key={ageGroup}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-slate-700">{ageGroup}</span>
+                              <span className="font-bold text-slate-800">{percentage}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-3">
+                              <div
+                                className="h-3 rounded-full bg-green-500"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                
+                    {/* Religion Breakdown */}
+                    <div className="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
+                      <p className="text-sm font-semibold text-purple-800 uppercase tracking-wide mb-3">
+                        Religious Distribution
+                      </p>
+                      <div className="space-y-2">
+                        {Object.entries(calculatedKPIs.diversityBreakdowns.religion).map(([religion, percentage]) => (
+                          <div key={religion}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-slate-700">{religion}</span>
+                              <span className="font-bold text-slate-800">{percentage}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-3">
+                              <div
+                                className="h-3 rounded-full bg-purple-500"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
-                
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                  {/* Status section - this already exists */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                  <span className="text-sm text-slate-600 font-medium">Status:</span>
-                  <span
-                    className={`px-4 py-2 rounded-full text-sm font-bold ${
-                      selectedKPI.status === 'Start Tracking'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : selectedKPI.status === 'Planning'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}
-                  >
-                    {selectedKPI.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 export default HRKPIDashboard;
