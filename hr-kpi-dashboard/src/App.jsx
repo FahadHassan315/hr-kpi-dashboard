@@ -101,7 +101,22 @@ const HRKPIDashboard = () => {
         });
         
         // Load calculated KPIs
-        const kpis = await getCalculatedKPIs();
+        export const getCalculatedKPIs = async () => {
+          const userId = getUserId();
+          
+          const { data, error } = await supabase
+            .from('calculated_kpis')
+            .select('*')
+            .eq('user_id', userId);
+        
+          if (error) {
+            console.error('Error fetching KPIs:', error);
+            return [];
+          }
+          
+          console.log('Raw KPI data from Supabase:', data); // DEBUG
+          return data || [];
+        };
         const kpiObj = {};
         kpis.forEach(kpi => {
           if (kpi.metadata) {
