@@ -25,6 +25,18 @@ const HRKPIDashboard = () => {
     startDate: '2025-01-01',
     endDate: '2025-12-31'
   });
+  const [dateRange, setDateRange] = useState({
+    startDate: '2025-01-01',
+    endDate: '2025-12-31'
+  });
+  const [turnoverDateRange, setTurnoverDateRange] = useState({
+    startDate: '2025-07-01',
+    endDate: '2025-12-31'
+  });
+  const [timeToFillDateRange, setTimeToFillDateRange] = useState({
+    startDate: '2025-07-01',
+    endDate: '2025-12-31'
+  });
   useEffect(() => {
     const loadSampleEDMData = async () => {
       try {
