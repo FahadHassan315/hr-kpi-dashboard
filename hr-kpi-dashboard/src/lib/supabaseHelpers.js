@@ -1,9 +1,8 @@
-import { supabase, getUserId, setUserContext } from './supabase';
+import { supabase, getUserId } from './supabase';
 
 // Initialize user context
 export const initializeUserContext = async () => {
   const userId = getUserId();
-  await setUserContext(userId);
   return userId;
 };
 
@@ -158,7 +157,6 @@ export const getEDMChartData = async () => {
 
   if (error) {
     if (error.code === 'PGRST116') {
-      // No data found, return null
       return null;
     }
     console.error('Error fetching chart data:', error);
@@ -167,7 +165,7 @@ export const getEDMChartData = async () => {
   return data;
 };
 
-// Clear all user data (for reset functionality)
+// Clear all user data
 export const clearAllUserData = async () => {
   const userId = getUserId();
   
