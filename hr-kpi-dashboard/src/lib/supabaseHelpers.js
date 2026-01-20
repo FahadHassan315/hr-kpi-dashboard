@@ -45,8 +45,7 @@ export const getUploadedFiles = async () => {
   return data || [];
 };
 
-// Save calculated KPI
-export const saveCalculatedKPI = async (kpiName, kpiValue, metadata = {}) => {
+export const saveCalculatedKPI = async (kpiName, kpiValue, metadata = null) => {
   const userId = getUserId();
   
   console.log('💾 SAVING KPI:', {
@@ -56,15 +55,21 @@ export const saveCalculatedKPI = async (kpiName, kpiValue, metadata = {}) => {
     metadata
   });
   
+  const saveData = {
+    user_id: userId,
+    kpi_name: kpiName,
+    kpi_value: kpiValue,
+    calculated_at: new Date().toISOString()
+  };
+  
+  // Only add metadata if it's not null/empty
+  if (metadata !== null && metadata !== undefined) {
+    saveData.metadata = metadata;
+  }
+  
   const { data, error } = await supabase
     .from('calculated_kpis')
-    .upsert({
-      user_id: userId,
-      kpi_name: kpiName,
-      kpi_value: kpiValue,
-      metadata: metadata,
-      calculated_at: new Date().toISOString()
-    }, {
+    .upsert(saveData, {
       onConflict: 'user_id,kpi_name'
     });
 
