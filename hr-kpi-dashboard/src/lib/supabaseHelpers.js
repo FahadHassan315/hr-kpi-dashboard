@@ -7,58 +7,41 @@ export const initializeUserContext = async () => {
 };
 
 // Save uploaded file metadata
-// Save calculated KPI
-export const saveCalculatedKPI = async (kpiName, kpiValue, metadata = {}) => {
+export const saveUploadedFile = async (fileType, fileName, rowCount) => {
   const userId = getUserId();
   
-  console.log('💾 SAVING KPI:', {
-    userId,
-    kpiName,
-    kpiValue,
-    metadata,
-    hasMetadata: Object.keys(metadata || {}).length > 0
-  });
-  
   const { data, error } = await supabase
-    .from('calculated_kpis')
+    .from('uploaded_files')
     .upsert({
       user_id: userId,
-      kpi_name: kpiName,
-      kpi_value: kpiValue,
-      metadata: metadata,
-      calculated_at: new Date().toISOString()
+      file_type: fileType,
+      file_name: fileName,
+      row_count: rowCount,
+      uploaded_at: new Date().toISOString()
     }, {
-      onConflict: 'user_id,kpi_name'
+      onConflict: 'user_id,file_type'
     });
 
   if (error) {
-    console.error('❌ Error saving KPI:', error);
+    console.error('Error saving file metadata:', error);
     return null;
   }
-  
-  console.log('✅ KPI saved successfully:', data);
   return data;
 };
 
-// Get all calculated KPIs for user
-export const getCalculatedKPIs = async () => {
+// Get all uploaded files for user
+export const getUploadedFiles = async () => {
   const userId = getUserId();
   
-  console.log('📥 FETCHING KPIs for user:', userId);
-  
   const { data, error } = await supabase
-    .from('calculated_kpis')
+    .from('uploaded_files')
     .select('*')
     .eq('user_id', userId);
 
   if (error) {
-    console.error('❌ Error fetching KPIs:', error);
+    console.error('Error fetching files:', error);
     return [];
   }
-  
-  console.log('📦 FETCHED KPIs:', data);
-  console.log('📦 Number of KPIs found:', data?.length || 0);
-  
   return data || [];
 };
 
