@@ -113,7 +113,28 @@ export const getDateRanges = async () => {
   }
   return data || [];
 };
+// Save date range
+export const saveDateRange = async (rangeType, startDate, endDate) => {
+  const userId = getUserId();
+  
+  const { data, error } = await supabase
+    .from('date_ranges')
+    .upsert({
+      user_id: userId,
+      range_type: rangeType,
+      start_date: startDate,
+      end_date: endDate,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,range_type'
+    });
 
+  if (error) {
+    console.error('Error saving date range:', error);
+    return null;
+  }
+  return data;
+};
 // Save EDM chart data
 export const saveEDMChartData = async (companyData, typeData) => {
   const userId = getUserId();
