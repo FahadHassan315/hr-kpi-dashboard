@@ -102,19 +102,21 @@ const HRKPIDashboard = () => {
         
         // Load calculated KPIs
         const kpis = await getCalculatedKPIs();
-        console.log('Loaded KPIs from database:', kpis); // DEBUG
+        console.log('Loaded KPIs from database:', kpis);
         const kpiObj = {};
+        
         kpis.forEach(kpi => {
           const kpiName = kpi.kpi_name;
           
-          // Check if this KPI has metadata (complex object like diversity, aiTraining, linkedinEngagement)
-          if (kpi.metadata && typeof kpi.metadata === 'object') {
+          // Special handling for complex objects stored in metadata
+          if (kpiName === 'diversityBreakdowns' || 
+              kpiName === 'aiTraining' || 
+              kpiName === 'linkedinEngagement') {
             kpiObj[kpiName] = kpi.metadata;
-          } 
-          // Otherwise use kpi_value (simple numbers)
+          }
+          // Simple numeric values
           else if (kpi.kpi_value !== null && kpi.kpi_value !== undefined) {
-            const numValue = parseFloat(kpi.kpi_value);
-            kpiObj[kpiName] = isNaN(numValue) ? kpi.kpi_value : numValue;
+            kpiObj[kpiName] = parseFloat(kpi.kpi_value);
           }
         });
         console.log('Processed KPI object:', kpiObj); // DEBUG
@@ -1282,10 +1284,19 @@ const jsonData = await parseExcelFile(file, sheetName);
     
     // Save all calculated KPIs
     for (const [key, value] of Object.entries(newCalculations)) {
-      if (typeof value === 'object' && value !== null) {
+      // Check if this is a complex object that should go in metadata
+      if (key === 'diversityBreakdowns' || key === 'aiTraining' || key === 'linkedinEngagement') {
+        await saveCalculatedKPI(key, null, value);
+      } 
+      // Simple numeric values
+      else if (typeof value === 'number') {
+        await saveCalculatedKPI(key, value, null);
+      }
+      // Handle any other cases
+      else if (typeof value === 'object' && value !== null) {
         await saveCalculatedKPI(key, null, value);
       } else {
-        await saveCalculatedKPI(key, value);
+        await saveCalculatedKPI(key, value, null);
       }
     }
     
