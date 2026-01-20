@@ -49,6 +49,13 @@ export const getUploadedFiles = async () => {
 export const saveCalculatedKPI = async (kpiName, kpiValue, metadata = {}) => {
   const userId = getUserId();
   
+  console.log('💾 SAVING KPI:', {
+    userId,
+    kpiName,
+    kpiValue,
+    metadata
+  });
+  
   const { data, error } = await supabase
     .from('calculated_kpis')
     .upsert({
@@ -62,9 +69,11 @@ export const saveCalculatedKPI = async (kpiName, kpiValue, metadata = {}) => {
     });
 
   if (error) {
-    console.error('Error saving KPI:', error);
+    console.error('❌ Error saving KPI:', error);
     return null;
   }
+  
+  console.log('✅ KPI saved:', kpiName);
   return data;
 };
 
@@ -72,39 +81,21 @@ export const saveCalculatedKPI = async (kpiName, kpiValue, metadata = {}) => {
 export const getCalculatedKPIs = async () => {
   const userId = getUserId();
   
+  console.log('📥 FETCHING KPIs for user:', userId);
+  
   const { data, error } = await supabase
     .from('calculated_kpis')
     .select('*')
     .eq('user_id', userId);
 
   if (error) {
-    console.error('Error fetching KPIs:', error);
+    console.error('❌ Error fetching KPIs:', error);
     return [];
   }
-  return data || [];
-};
-
-// Save date range
-export const saveDateRange = async (rangeType, startDate, endDate) => {
-  const userId = getUserId();
   
-  const { data, error } = await supabase
-    .from('date_ranges')
-    .upsert({
-      user_id: userId,
-      range_type: rangeType,
-      start_date: startDate,
-      end_date: endDate,
-      updated_at: new Date().toISOString()
-    }, {
-      onConflict: 'user_id,range_type'
-    });
-
-  if (error) {
-    console.error('Error saving date range:', error);
-    return null;
-  }
-  return data;
+  console.log('📦 FETCHED', data?.length || 0, 'KPIs:', data);
+  
+  return data || [];
 };
 
 // Get date ranges for user
