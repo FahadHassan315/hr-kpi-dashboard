@@ -210,7 +210,6 @@ const parseExcelFile = async (file, sheetName = null, fileType = null) => {
             );
             targetSheet = similar || workbook.SheetNames[0];
           }
-        }
         } else if (sheetName) {
           // User specified sheet but it doesn't exist - try to find similar
           console.warn(`Specified sheet "${sheetName}" not found, searching for similar...`);
