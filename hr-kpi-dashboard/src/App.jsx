@@ -31,7 +31,8 @@ const HRKPIDashboard = () => {
     linkedinLearning: null,
     linkedinFollowers: null,
     linkedinVisitors: null,
-    linkedinContent: null
+    linkedinContent: null,
+    talentxData: null
   });
 
   const [dateRange, setDateRange] = useState({
@@ -198,6 +199,18 @@ const parseExcelFile = async (file, sheetName = null, fileType = null) => {
         } else if (fileType === 'linkedinLearning') {
           // Use smart detection for LinkedIn Learning
           targetSheet = findBestSheetForLearning(workbook);
+        } else if (fileType === 'talentxData') {
+          // For TalentX, use the sheetName passed in (either 'Employee data' or 'TalentX - Master Sheet')
+          if (sheetName && workbook.SheetNames.includes(sheetName)) {
+            targetSheet = sheetName;
+          } else {
+            // Try to find similar sheet names
+            const similar = workbook.SheetNames.find(name => 
+              name.toLowerCase().includes(sheetName.toLowerCase())
+            );
+            targetSheet = similar || workbook.SheetNames[0];
+          }
+        }
         } else if (sheetName) {
           // User specified sheet but it doesn't exist - try to find similar
           console.warn(`Specified sheet "${sheetName}" not found, searching for similar...`);
@@ -404,18 +417,31 @@ const findBestSheetForLearning = (workbook) => {
     {
       companyPillar: 'Talent Management',
       hrPillar: 'Talent & Skills',
-      kpi: 'Employee Development Index',
-      target: 'Increase by 5% from baseline',
-      currentValue: 0,
-      targetValue: 5,
-      status: 'Start Tracking',
-      icon: '📈',
-      calculable: false,
+      kpi: 'Botnostic Solutions - Talent Management',
+      target: 'Track assessment participation and training engagement',
+      currentValue: calculatedKPIs.botnosticSolutions?.assessmentGiven || 0,
+      targetValue: 100,
+      status: 'In Implementation',
+      icon: '🎯',
+      calculable: true,
+      dataFile: 'talentxData',
       details: {
-        description: 'Measures overall employee skill growth and development through training completion and skill assessments.',
-        dataSource: null,
-        formula: null
-      }
+        description: 'Tracks talent management and training needs assessment through the Botnostic platform, measuring employee assessment participation and training progress.',
+        dataSource: 'TalentX Data (Master Sheet & Employee Data)',
+        formula: 'Total Assessments Given = Distinct employee_id from Employee Data sheet | People Logged In = Distinct employee_code from Master Sheet | Training Started = Count where training_progress_percentage > 0',
+        additionalInfo: calculatedKPIs.botnosticSolutions 
+          ? `${calculatedKPIs.botnosticSolutions.assessmentGiven} employees given assessment | ${calculatedKPIs.botnosticSolutions.loggedIn} logged into platform | ${calculatedKPIs.botnosticSolutions.trainingStarted} started training`
+          : 'Upload TalentX Data to see Botnostic platform analytics.',
+        achievements: [
+          'Business Requirements Document (BRD) finalized',
+          'Promotion policy framework established',
+          'Performance Development Plan (PDP) template created',
+          'Current grade structure documented',
+          'Over 10 job descriptions standardized',
+          'Business unit organograms mapped',
+          'Contract executed and implementation underway'
+        ]
+      }  
     },
     {
       companyPillar: 'Talent Management',
@@ -689,6 +715,50 @@ const findBestSheetForLearning = (workbook) => {
       return null;
     }
   };
+
+  const calculateBotnosticMetrics = (employeeData, masterData) => {
+    try {
+      // Total People given assessment - distinct employee_id from Employee Data
+      const assessmentGiven = new Set();
+      employeeData.forEach(row => {
+        const empId = row['employee_id'];
+        if (empId) {
+          assessmentGiven.add(empId);
+        }
+      });
+      
+      // People Logged In Assessment - distinct employee_code from Master Sheet
+      const loggedIn = new Set();
+      masterData.forEach(row => {
+        const empCode = row['employee_code'];
+        if (empCode) {
+          loggedIn.add(empCode);
+        }
+      });
+      
+      // Total employees that started training - training_progress_percentage > 0
+      const trainingStarted = masterData.filter(row => {
+        const progress = parseFloat(row['training_progress_percentage']);
+        return !isNaN(progress) && progress > 0;
+      }).length;
+      
+      console.log('Botnostic metrics:', {
+        assessmentGiven: assessmentGiven.size,
+        loggedIn: loggedIn.size,
+        trainingStarted
+      });
+      
+      return {
+        assessmentGiven: assessmentGiven.size,
+        loggedIn: loggedIn.size,
+        trainingStarted: trainingStarted
+      };
+    } catch (error) {
+      console.error('Error calculating Botnostic metrics:', error);
+      return null;
+    }
+  };
+  
   const getTotalLinkedInLicenses = (learningData) => {
     try {
       if (!learningData || learningData.length === 0) {
@@ -1277,9 +1347,24 @@ const jsonData = await parseExcelFile(file, sheetName);
           ...(newCalculations.linkedinEngagement || {}),
           impressions: impressions
         };
+      }   
+    } else if (fileType === 'talentxData') {
+      console.log('Processing TalentX Data...');
+      
+      // Parse both sheets
+      const employeeDataSheet = await parseExcelFile(file, 'Employee data', fileType);
+      const masterSheet = await parseExcelFile(file, 'TalentX - Master Sheet', fileType);
+      
+      console.log('Employee Data rows:', employeeDataSheet.length);
+      console.log('Master Sheet rows:', masterSheet.length);
+      
+      const botnosticMetrics = calculateBotnosticMetrics(employeeDataSheet, masterSheet);
+      console.log('Botnostic metrics:', botnosticMetrics);
+      
+      if (botnosticMetrics !== null) {
+        newCalculations.botnosticSolutions = botnosticMetrics;
       }
-    }    
-
+    }
     await saveUploadedFile(fileType, file.name, jsonData.length);
     
     // Save all calculated KPIs
@@ -1368,6 +1453,7 @@ const jsonData = await parseExcelFile(file, sheetName);
     // Special handling for LinkedIn Page Engagement KPI
     const isLinkedInKPI = kpi.kpi === 'LinkedIn Page Engagement';
     const isAIProcessesKPI = kpi.kpi === 'AI-Driven P&C Processes';
+    const isBotnosticKPI = kpi.kpi === 'Botnostic Solutions - Talent Management';
     
     if (isLinkedInKPI) {
       const followers = calculatedKPIs.linkedinEngagement?.followers || 0;
@@ -1514,7 +1600,69 @@ const jsonData = await parseExcelFile(file, sheetName);
           </div>
         );
       }    
-  
+    if (isBotnosticKPI) {
+      const assessmentGiven = calculatedKPIs.botnosticSolutions?.assessmentGiven || 0;
+      const loggedIn = calculatedKPIs.botnosticSolutions?.loggedIn || 0;
+      const trainingStarted = calculatedKPIs.botnosticSolutions?.trainingStarted || 0;
+      
+      return (
+        <div
+          key={index}
+          onClick={() => handleKPIClick(kpi)}
+          className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer border-t-4 transform hover:-translate-y-1"
+          style={{ borderTopColor: pillarColors[kpi.companyPillar], minHeight: '380px' }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <div className="text-3xl mb-2">{kpi.icon}</div>
+              <h3 className="font-bold text-slate-800 text-lg mb-1">{kpi.kpi}</h3>
+              <p className="text-sm text-slate-500 mb-2">{kpi.hrPillar}</p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              {kpi.status}
+            </span>
+          </div>
+    
+          <div className="space-y-3">
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-sm font-medium text-slate-700 mb-2">Platform Metrics:</p>
+              <p className="text-sm text-slate-600">{kpi.target}</p>
+            </div>
+    
+            {/* Assessment Given */}
+            <div className="bg-blue-50 rounded-lg p-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-700">📋 Total Assessments Given:</span>
+                <span className="font-bold text-blue-700">{assessmentGiven}</span>
+              </div>
+            </div>
+    
+            {/* Logged In */}
+            <div className="bg-green-50 rounded-lg p-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-700">👤 People Logged In:</span>
+                <span className="font-bold text-green-700">{loggedIn}</span>
+              </div>
+            </div>
+    
+            {/* Training Started */}
+            <div className="bg-purple-50 rounded-lg p-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-700">🎓 Training Started:</span>
+                <span className="font-bold text-purple-700">{trainingStarted}</span>
+              </div>
+            </div>
+          </div>
+    
+          {kpi.calculable && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-green-600 font-medium">
+              <RefreshCw className="w-3 h-3" />
+              Auto-calculated from TalentX data
+            </div>
+          )}
+        </div>
+      );
+    }  
     // Regular KPI card for all other KPIs
     const safeCurrent = kpi.currentValue != null ? Number(kpi.currentValue) : null;
     const safeTarget = kpi.targetValue != null ? Number(kpi.targetValue) : null;
@@ -2098,7 +2246,11 @@ const jsonData = await parseExcelFile(file, sheetName);
                   label="eNPS & cNPS Survey"
                   description="Employee Net Promoter Score and company culture survey responses"
                 />
-                
+                <FileUploadSection
+                  fileType="talentxData"
+                  label="TalentX Data (Botnostic)"
+                  description="Talent management data with employee assessments and training progress from Master Sheet and Employee Data"
+                />
                  <FileUploadSection
                   fileType="linkedinLearnerDetail"
                   label="LinkedIn Learner Detail Report"
@@ -2143,6 +2295,7 @@ const jsonData = await parseExcelFile(file, sheetName);
                     <li>• <strong>Diversity Index</strong> - Calculated from EDM Report</li>
                     <li>• <strong>AI Training</strong> - Calculated from LinkedIn Learner Detail</li>
                     <li>• <strong>Talent Development</strong> - Calculated from LinkedIn Learning Report</li>
+                    <li>• <strong>Botnostic Solutions</strong> - Calculated from TalentX Data</li>
                     <li>• <strong>LinkedIn Page Engagement</strong> - Calculated from LinkedIn Reports (Followers, Visitors, Content)</li>
                   </ul>
                 </div>
